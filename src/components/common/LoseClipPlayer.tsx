@@ -19,8 +19,8 @@ export const LoseClipPlayer: React.FC<LoseClipPlayerProps> = ({
   const [loadError, setLoadError] = useState<boolean>(false);
 
   useEffect(() => {
-    // 1. Pause background game/site music while lose clip plays
-    soundSystem.pauseMusic();
+    // 1. Mute background video music while lose clip plays
+    soundSystem.muteBgMusicTemporarily();
 
     const video = videoRef.current;
     if (!video) return;
@@ -51,6 +51,7 @@ export const LoseClipPlayer: React.FC<LoseClipPlayerProps> = ({
     }
 
     return () => {
+      soundSystem.unmuteBgMusic();
       if (onResumeMusic) {
         onResumeMusic();
       }

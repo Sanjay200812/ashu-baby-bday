@@ -16,17 +16,27 @@ export const BackgroundVideo: React.FC = () => {
     video.muted = true;
     video.play().catch(() => {});
 
-    // On user interaction (click/tap/key), enable audio from the background video!
+    const syncAudioState = () => {
+      if (!video) return;
+      if (soundSystem.isTemporarilyMuted || !soundSystem.isMusicPlaying || soundSystem.getIsMuted()) {
+        video.muted = true;
+        video.volume = 0;
+      } else {
+        video.muted = false;
+        video.volume = soundSystem.volume;
+      }
+    };
+
+    const unsubscribe = soundSystem.subscribe(syncAudioState);
+
+    // On user interaction (click/tap/key), enable audio from the background video if not temporarily muted!
     const handleFirstInteraction = () => {
       soundSystem.registerUserInteraction();
       if (video) {
         if (video.paused) {
           video.play().catch(() => {});
         }
-        if (soundSystem.isMusicPlaying || !soundSystem.getIsMuted()) {
-          video.muted = false;
-          video.volume = soundSystem.volume;
-        }
+        syncAudioState();
       }
     };
 
@@ -36,6 +46,7 @@ export const BackgroundVideo: React.FC = () => {
 
     return () => {
       soundSystem.unregisterBgVideo();
+      unsubscribe();
       window.removeEventListener('click', handleFirstInteraction);
       window.removeEventListener('touchstart', handleFirstInteraction);
       window.removeEventListener('keydown', handleFirstInteraction);

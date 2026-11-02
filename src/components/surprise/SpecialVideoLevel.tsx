@@ -19,9 +19,9 @@ export const SpecialVideoLevel: React.FC<SpecialVideoLevelProps> = ({ onComplete
   const [loadError, setLoadError] = useState<boolean>(false);
   const [hasStarted, setHasStarted] = useState<boolean>(false);
 
-  // Pause background site music while video level is active; resume on unmount
+  // Mute background site music while special video is active; resume on unmount
   useEffect(() => {
-    soundSystem.pauseMusic();
+    soundSystem.muteBgMusicTemporarily();
 
     // Attempt autoplay with sound
     const startVideo = () => {
@@ -30,7 +30,7 @@ export const SpecialVideoLevel: React.FC<SpecialVideoLevelProps> = ({ onComplete
           .play()
           .then(() => {
             setHasStarted(true);
-            soundSystem.pauseMusic();
+            soundSystem.muteBgMusicTemporarily();
           })
           .catch(() => {
             // Autoplay with audio may require initial user gesture
@@ -52,7 +52,7 @@ export const SpecialVideoLevel: React.FC<SpecialVideoLevelProps> = ({ onComplete
       clearTimeout(timer);
       document.removeEventListener('fullscreenchange', onFullscreenChange);
       document.removeEventListener('webkitfullscreenchange', onFullscreenChange);
-      soundSystem.playSiteMusic();
+      soundSystem.unmuteBgMusic();
     };
   }, []);
 
@@ -106,6 +106,7 @@ export const SpecialVideoLevel: React.FC<SpecialVideoLevelProps> = ({ onComplete
   const handleEnded = () => {
     setHasFinished(true);
     soundSystem.playVictory();
+    soundSystem.unmuteBgMusic();
 
     // If currently in fullscreen mode, exit fullscreen so user can see next level button
     if (document.fullscreenElement && document.exitFullscreen) {
@@ -122,7 +123,7 @@ export const SpecialVideoLevel: React.FC<SpecialVideoLevelProps> = ({ onComplete
   const handleProceed = () => {
     if (!hasFinished) return;
     soundSystem.playClick();
-    soundSystem.playSiteMusic();
+    soundSystem.unmuteBgMusic();
     onComplete();
   };
 
@@ -167,7 +168,7 @@ export const SpecialVideoLevel: React.FC<SpecialVideoLevelProps> = ({ onComplete
               <button
                 onClick={() => {
                   soundSystem.playClick();
-                  soundSystem.playSiteMusic();
+                  soundSystem.unmuteBgMusic();
                   onBack();
                 }}
                 className="btn-cyber-secondary"
@@ -233,7 +234,7 @@ export const SpecialVideoLevel: React.FC<SpecialVideoLevelProps> = ({ onComplete
             controlsList="nodownload nofullscreen noremoteplayback noplaybackrate"
             onPlay={() => {
               setHasStarted(true);
-              soundSystem.pauseMusic();
+              soundSystem.muteBgMusicTemporarily();
             }}
             onTimeUpdate={handleTimeUpdate}
             onSeeking={handleSeeking}

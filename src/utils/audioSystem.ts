@@ -30,6 +30,7 @@ class SoundSystem {
   public volume: number = 0.8;
   public hasUserInteracted: boolean = false;
   public isUsingSynthFallback: boolean = false;
+  public isTemporarilyMuted: boolean = false;
 
   constructor() {
     // Zero separate audio elements loaded - background video is the sound source
@@ -37,10 +38,17 @@ class SoundSystem {
 
   public registerBgVideo(video: HTMLVideoElement) {
     this.bgVideo = video;
+    if (this.isTemporarilyMuted) {
+      this.bgVideo.muted = true;
+      this.bgVideo.volume = 0;
+      return;
+    }
     if (this.isMusicPlaying && !this.isMuted) {
       this.bgVideo.muted = false;
       this.bgVideo.volume = this.volume;
       this.bgVideo.play().catch(() => {});
+    } else {
+      this.bgVideo.muted = true;
     }
   }
 
@@ -317,7 +325,30 @@ class SoundSystem {
 
   // ===================== BACKGROUND VIDEO SOUNDTRACK SYSTEM =====================
 
+  public muteBgMusicTemporarily() {
+    this.isTemporarilyMuted = true;
+    this.isMusicPlaying = false;
+    if (this.bgVideo) {
+      this.bgVideo.muted = true;
+      this.bgVideo.volume = 0;
+    }
+    this.stopSynthMelody();
+    this.notify();
+  }
+
+  public unmuteBgMusic() {
+    this.isTemporarilyMuted = false;
+    this.playSiteMusic();
+  }
+
   public playSiteMusic() {
+    if (this.isTemporarilyMuted) {
+      if (this.bgVideo) {
+        this.bgVideo.muted = true;
+        this.bgVideo.volume = 0;
+      }
+      return;
+    }
     this.registerUserInteraction();
     this.currentTrack = 'bgvideo';
     this.isMusicPlaying = true;
@@ -349,6 +380,7 @@ class SoundSystem {
     this.isMusicPlaying = false;
     if (this.bgVideo) {
       this.bgVideo.muted = true;
+      this.bgVideo.volume = 0;
     }
     this.stopSynthMelody();
     this.notify();
