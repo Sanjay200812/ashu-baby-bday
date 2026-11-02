@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
 import confetti from 'canvas-confetti';
+import { toPng } from 'html-to-image';
 import {
   Sparkles,
   RotateCcw,
@@ -12,6 +13,7 @@ import {
   CheckCircle2,
   ArrowLeft,
   Share2,
+  Loader2,
 } from 'lucide-react';
 import { BIRTHDAY_CONFIG } from '../../config/birthdayConfig';
 import { soundSystem } from '../../utils/audioSystem';
@@ -32,12 +34,18 @@ export const FinalSurprise: React.FC<FinalSurpriseProps> = ({
   const letterRef = useRef<HTMLDivElement>(null);
 
   const [candlesLit, setCandlesLit] = useState<boolean>(true);
+  const [isDownloading, setIsDownloading] = useState<boolean>(false);
+  const [isSharing, setIsSharing] = useState<boolean>(false);
 
   // Map selected gifts safely (only 1 selected gift as requested)
   const safeIds = Array.isArray(selectedGiftIds) ? selectedGiftIds : [];
-  const selectedGift = (BIRTHDAY_CONFIG.availableGifts || []).find((g) =>
-    safeIds.includes(g.id)
-  ) || BIRTHDAY_CONFIG.availableGifts[0];
+  const selectedGift =
+    (BIRTHDAY_CONFIG.availableGifts || []).find((g) => safeIds.includes(g.id)) ||
+    BIRTHDAY_CONFIG.availableGifts[0];
+
+  const messageParagraphs = BIRTHDAY_CONFIG.birthdayLetter.message
+    .split('\n\n')
+    .filter((p) => p.trim().length > 0);
 
   useEffect(() => {
     // Keep website background music playing
@@ -98,42 +106,286 @@ export const FinalSurprise: React.FC<FinalSurpriseProps> = ({
     });
   };
 
+  /**
+   * Pure HTML5 2D Canvas Fallback
+   * Synthesizes the entire birthday card from scratch if toPng is unavailable or fails:
+   * 1. Top bg-card image
+   * 2. Happy Birthday heading & subheading
+   * 3. Selected birthday gift
+   * 4. Complete birthday message
+   * 5. Aakash & Sanjay signature
+   */
+  const downloadSynthesizedCard = async (): Promise<string> => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Failed to get 2D canvas context');
+
+    const width = 1000;
+
+    // Preload bg-card image
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.src = BIRTHDAY_CONFIG.bgCardUrl;
+
+    await new Promise((resolve) => {
+      if (img.complete) resolve(true);
+      else {
+        img.onload = () => resolve(true);
+        img.onerror = () => resolve(true);
+      }
+    });
+
+    const imgWidth = 920;
+    const aspect = img.naturalWidth ? img.naturalHeight / img.naturalWidth : 0.65;
+    const imgHeight = Math.min(imgWidth * aspect, 680);
+
+    // Text wrapping helper
+    const wrapText = (text: string, maxWidth: number, font: string) => {
+      ctx.font = font;
+      const words = text.split(' ');
+      const lines: string[] = [];
+      let cur = words[0] || '';
+      for (let i = 1; i < words.length; i++) {
+        const w = words[i];
+        if (ctx.measureText(cur + ' ' + w).width < maxWidth) {
+          cur += ' ' + w;
+        } else {
+          lines.push(cur);
+          cur = w;
+        }
+      }
+      if (cur) lines.push(cur);
+      return lines;
+    };
+
+    const letterLines: string[][] = messageParagraphs.map((para) =>
+      wrapText(para, 880, '20px monospace')
+    );
+
+    let textBlockHeight = 0;
+    letterLines.forEach((lines) => {
+      textBlockHeight += lines.length * 32 + 20;
+    });
+
+    const totalHeight =
+      40 + // top pad
+      imgHeight +
+      36 + // image bottom spacing
+      120 + // heading & subheading
+      (selectedGift ? 120 : 0) + // gift badge
+      40 + // letter padding
+      textBlockHeight +
+      140 + // signature block
+      50; // bottom pad
+
+    canvas.width = width;
+    canvas.height = totalHeight;
+
+    // Card background
+    ctx.fillStyle = '#0a0508';
+    ctx.fillRect(0, 0, width, totalHeight);
+
+    // Glowing Neon Red Outer Card Border
+    ctx.strokeStyle = '#ff2a4b';
+    ctx.lineWidth = 4;
+    ctx.strokeRect(16, 16, width - 32, totalHeight - 32);
+
+    let currentY = 40;
+
+    // 1. Top bg-card image
+    if (img.complete && img.naturalWidth > 0) {
+      const imgX = (width - imgWidth) / 2;
+      ctx.save();
+      ctx.strokeStyle = 'rgba(255, 42, 75, 0.7)';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(imgX, currentY, imgWidth, imgHeight);
+      ctx.drawImage(img, imgX, currentY, imgWidth, imgHeight);
+      ctx.restore();
+    }
+    currentY += imgHeight + 40;
+
+    // 2. Heading & Subheading
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#ff2a4b';
+    ctx.font = 'bold 36px monospace';
+    ctx.shadowColor = '#ff2a4b';
+    ctx.shadowBlur = 14;
+    ctx.fillText(BIRTHDAY_CONFIG.surpriseHeading, width / 2, currentY);
+    ctx.shadowBlur = 0;
+    currentY += 40;
+
+    ctx.fillStyle = '#ffb703';
+    ctx.font = 'bold 22px monospace';
+    ctx.fillText(BIRTHDAY_CONFIG.surpriseSubheading, width / 2, currentY);
+    currentY += 50;
+
+    // 3. Claimed Birthday Gift
+    if (selectedGift) {
+      const giftBoxW = 760;
+      const giftBoxH = 84;
+      const giftBoxX = (width - giftBoxW) / 2;
+      ctx.fillStyle = '#120a0e';
+      ctx.strokeStyle = '#ffb703';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(giftBoxX, currentY, giftBoxW, giftBoxH);
+      ctx.fillRect(giftBoxX, currentY, giftBoxW, giftBoxH);
+
+      ctx.fillStyle = '#ffb703';
+      ctx.font = 'bold 16px monospace';
+      ctx.fillText('🎁 ASHUU’S CLAIMED BIRTHDAY GIFT', width / 2, currentY + 30);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 22px monospace';
+      ctx.fillText('✓ ' + selectedGift.title, width / 2, currentY + 62);
+      currentY += giftBoxH + 45;
+    }
+
+    // 4. Personalized Birthday Message
+    const letterBoxW = 880;
+    const letterBoxX = (width - letterBoxW) / 2;
+    ctx.textAlign = 'left';
+    ctx.font = '20px monospace';
+    ctx.fillStyle = '#ffffff';
+
+    letterLines.forEach((lines) => {
+      lines.forEach((line) => {
+        ctx.fillText(line, letterBoxX, currentY);
+        currentY += 32;
+      });
+      currentY += 16;
+    });
+
+    currentY += 20;
+
+    // 5. Signature
+    ctx.strokeStyle = 'rgba(255, 42, 75, 0.35)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(letterBoxX, currentY);
+    ctx.lineTo(letterBoxX + letterBoxW, currentY);
+    ctx.stroke();
+    currentY += 35;
+
+    ctx.font = 'bold 30px monospace';
+    ctx.fillStyle = '#ff2a4b';
+    ctx.fillText(BIRTHDAY_CONFIG.birthdayLetter.signature + ' ❤️', letterBoxX, currentY);
+    currentY += 28;
+
+    ctx.font = '16px monospace';
+    ctx.fillStyle = '#9e646d';
+    ctx.fillText('Your forever syndicate brothers & partners-in-crime', letterBoxX, currentY);
+
+    return canvas.toDataURL('image/png', 0.98);
+  };
+
+  /**
+   * Complete Birthday Card Image Generator
+   * Generates a single high-quality PNG containing:
+   * - bg-card image at the top
+   * - Happy Birthday heading
+   * - Claimed prize
+   * - Complete message
+   * - Aakash & Sanjay signature
+   */
+  const captureCompleteCardDataUrl = async (): Promise<string> => {
+    if (cardRef.current) {
+      try {
+        // Wait for all images inside cardRef to be fully loaded
+        const imgs = cardRef.current.querySelectorAll('img');
+        await Promise.all(
+          Array.from(imgs).map(
+            (img) =>
+              new Promise((resolve) => {
+                if (img.complete) resolve(true);
+                else {
+                  img.onload = () => resolve(true);
+                  img.onerror = () => resolve(true);
+                }
+              })
+          )
+        );
+
+        // Capture with html-to-image
+        const dataUrl = await toPng(cardRef.current, {
+          quality: 1,
+          pixelRatio: 2,
+          backgroundColor: '#0a0508',
+          cacheBust: true,
+          filter: (node: HTMLElement) => {
+            if (node.classList && node.classList.contains('no-export')) {
+              return false;
+            }
+            return true;
+          },
+          style: {
+            transform: 'none',
+            margin: '0',
+          },
+        });
+
+        if (dataUrl && dataUrl.startsWith('data:image/png')) {
+          return dataUrl;
+        }
+      } catch (err) {
+        console.warn('DOM capture toPng failed, using canvas synthesis fallback:', err);
+      }
+    }
+
+    // Canvas synthesis fallback
+    return await downloadSynthesizedCard();
+  };
+
   const handleDownloadCard = async () => {
+    if (isDownloading) return;
+    setIsDownloading(true);
     soundSystem.playVictory();
+
     try {
-      const response = await fetch(BIRTHDAY_CONFIG.bgCardUrl);
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
+      const dataUrl = await captureCompleteCardDataUrl();
       const link = document.createElement('a');
-      link.href = url;
-      link.download = 'Ashu_Birthday_Card.png';
+      link.download = 'Ashu_Complete_Birthday_Card.png';
+      link.href = dataUrl;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-    } catch {
+    } catch (err) {
+      console.error('Download error:', err);
+      // Last resort fallback
       const link = document.createElement('a');
       link.href = BIRTHDAY_CONFIG.bgCardUrl;
       link.download = 'Ashu_Birthday_Card.png';
       link.target = '_blank';
       link.click();
+    } finally {
+      setIsDownloading(false);
     }
   };
 
   const handleShareWhatsApp = async () => {
+    if (isSharing) return;
+    setIsSharing(true);
     soundSystem.playClick();
+
     const deployedUrl = 'https://ashu-baby-bday.vercel.app';
     const prizeText = selectedGift ? `Claimed Prize: ${selectedGift.title}! 🎁` : '';
     const shareMessage = `🎂 Happy Birthday Ashu (SOUTH DEV)! 🔥✨\n\n${BIRTHDAY_CONFIG.birthdayLetter.message}\n\n${prizeText}\n\nCheck out Ashuu's Birthday Website here: ${deployedUrl}`;
 
-    // Try Web Share API with image file if supported
-    if (typeof navigator !== 'undefined' && navigator.share) {
-      try {
-        const response = await fetch(BIRTHDAY_CONFIG.bgCardUrl);
-        const blob = await response.blob();
-        const file = new File([blob], 'Ashu_Birthday_Card.png', { type: blob.type || 'image/png' });
+    try {
+      if (typeof navigator !== 'undefined' && navigator.share) {
+        let file: File | null = null;
+        try {
+          const dataUrl = await captureCompleteCardDataUrl();
+          const res = await fetch(dataUrl);
+          const blob = await res.blob();
+          file = new File([blob], 'Ashu_Complete_Birthday_Card.png', { type: 'image/png' });
+        } catch {
+          // If capture failed, fallback to bg-card
+          const res = await fetch(BIRTHDAY_CONFIG.bgCardUrl);
+          const blob = await res.blob();
+          file = new File([blob], 'Ashu_Birthday_Card.png', { type: blob.type || 'image/png' });
+        }
 
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
           await navigator.share({
             title: 'Happy Birthday Ashu!',
             text: shareMessage,
@@ -148,19 +400,17 @@ export const FinalSurprise: React.FC<FinalSurpriseProps> = ({
           });
           return;
         }
-      } catch (err) {
-        console.log('Web Share dismissed or unavailable:', err);
       }
+    } catch (err) {
+      console.log('Web Share dismissed or unavailable:', err);
+    } finally {
+      setIsSharing(false);
     }
 
-    // Direct WhatsApp fallback: opens WhatsApp with prefilled birthday message and link
+    // Direct WhatsApp fallback: opens WhatsApp with prefilled message & link
     const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareMessage)}`;
     window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
   };
-
-  const messageParagraphs = BIRTHDAY_CONFIG.birthdayLetter.message
-    .split('\n\n')
-    .filter((p) => p.trim().length > 0);
 
   return (
     <div
@@ -216,7 +466,7 @@ export const FinalSurprise: React.FC<FinalSurpriseProps> = ({
         </button>
       </div>
 
-      {/* Main Birthday Card */}
+      {/* Complete Printable Birthday Card Container */}
       <div
         ref={cardRef}
         className="terminal-panel"
@@ -229,9 +479,10 @@ export const FinalSurprise: React.FC<FinalSurpriseProps> = ({
           boxShadow: '0 0 60px rgba(255, 42, 75, 0.5)',
           borderRadius: '16px',
           backgroundColor: '#0a0508',
+          position: 'relative',
         }}
       >
-        {/* Large Original bg-card Birthday Card (Original proportions & high quality) */}
+        {/* 1. Large Complete bg-card Birthday Card Photo at the Top */}
         <div
           style={{
             position: 'relative',
@@ -247,6 +498,7 @@ export const FinalSurprise: React.FC<FinalSurpriseProps> = ({
           <img
             src={BIRTHDAY_CONFIG.bgCardUrl}
             alt="South Dev Birthday Card"
+            crossOrigin="anonymous"
             style={{
               width: '100%',
               height: 'auto',
@@ -258,7 +510,7 @@ export const FinalSurprise: React.FC<FinalSurpriseProps> = ({
           />
         </div>
 
-        {/* Heading in Tenglish */}
+        {/* 2. Heading & Subheading in Tenglish */}
         <h1
           className="text-neon-red glitch-text"
           data-text={BIRTHDAY_CONFIG.surpriseHeading}
@@ -385,7 +637,7 @@ export const FinalSurprise: React.FC<FinalSurpriseProps> = ({
 
           <button
             onClick={handleToggleCandles}
-            className="btn-cyber-secondary"
+            className="btn-cyber-secondary no-export"
             style={{
               marginTop: '14px',
               padding: '8px 18px',
@@ -408,7 +660,7 @@ export const FinalSurprise: React.FC<FinalSurpriseProps> = ({
           </button>
         </div>
 
-        {/* Selected 1 Gift Badge */}
+        {/* 3. Selected 1 Gift Badge */}
         {selectedGift && (
           <div
             style={{
@@ -448,13 +700,13 @@ export const FinalSurprise: React.FC<FinalSurpriseProps> = ({
           </div>
         )}
 
-        {/* Birthday Letter in Tenglish */}
+        {/* 4. Complete Birthday Letter & 5. Signature in Tenglish */}
         <div
           ref={letterRef}
           style={{
             width: '100%',
             maxWidth: '600px',
-            margin: '0 auto 32px',
+            margin: '0 auto',
             background: 'rgba(18, 10, 14, 0.95)',
             border: '1px solid rgba(255, 42, 75, 0.35)',
             borderRadius: '8px',
@@ -476,6 +728,7 @@ export const FinalSurprise: React.FC<FinalSurpriseProps> = ({
             </p>
           ))}
 
+          {/* 5. Aakash & Sanjay Signature */}
           <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid rgba(255, 42, 75, 0.25)' }}>
             <div
               style={{
@@ -495,52 +748,73 @@ export const FinalSurprise: React.FC<FinalSurpriseProps> = ({
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Action & Download Options placed at the end */}
-        <div style={{ display: 'flex', gap: '14px', justifyContent: 'center', flexWrap: 'wrap' }}>
-          {/* Download Birthday Card / Poster */}
-          <button
-            onClick={handleDownloadCard}
-            className="btn-cyber-primary pulse-cyber"
-            style={{ padding: '14px 24px', fontSize: '0.9rem', fontWeight: 900 }}
-          >
-            <Download size={18} />
-            <span>DOWNLOAD BIRTHDAY CARD</span>
-          </button>
+      {/* Action & Download Options - Placed OUTSIDE cardRef so they are never in the downloaded card */}
+      <div
+        style={{
+          width: '100%',
+          maxWidth: '740px',
+          marginTop: '24px',
+          display: 'flex',
+          gap: '14px',
+          justifyContent: 'center',
+          flexWrap: 'wrap',
+        }}
+      >
+        {/* Download Birthday Card Button */}
+        <button
+          onClick={handleDownloadCard}
+          disabled={isDownloading}
+          className="btn-cyber-primary pulse-cyber"
+          style={{
+            padding: '14px 24px',
+            fontSize: '0.9rem',
+            fontWeight: 900,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            cursor: isDownloading ? 'wait' : 'pointer',
+          }}
+        >
+          {isDownloading ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
+          <span>{isDownloading ? 'GENERATING FULL CARD...' : 'DOWNLOAD BIRTHDAY CARD'}</span>
+        </button>
 
-          {/* Share on WhatsApp */}
-          <button
-            onClick={handleShareWhatsApp}
-            className="btn-cyber-secondary pulse-cyber"
-            style={{
-              padding: '14px 24px',
-              fontSize: '0.9rem',
-              fontWeight: 900,
-              borderColor: '#25D366',
-              color: '#25D366',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '8px',
-              boxShadow: '0 0 25px rgba(37, 211, 102, 0.3)',
-            }}
-          >
-            <Share2 size={18} />
-            <span>SHARE ON WHATSAPP</span>
-          </button>
+        {/* Share on WhatsApp Button */}
+        <button
+          onClick={handleShareWhatsApp}
+          disabled={isSharing}
+          className="btn-cyber-secondary pulse-cyber"
+          style={{
+            padding: '14px 24px',
+            fontSize: '0.9rem',
+            fontWeight: 900,
+            borderColor: '#25D366',
+            color: '#25D366',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            boxShadow: '0 0 25px rgba(37, 211, 102, 0.3)',
+            cursor: isSharing ? 'wait' : 'pointer',
+          }}
+        >
+          <Share2 size={18} />
+          <span>SHARE ON WHATSAPP</span>
+        </button>
 
-          {/* Replay */}
-          <button
-            onClick={() => {
-              soundSystem.playClick();
-              onReplayAll();
-            }}
-            className="btn-cyber-secondary"
-            style={{ padding: '14px 24px', fontSize: '0.9rem' }}
-          >
-            <RotateCcw size={18} />
-            <span>[ REPLAY LEVELS ]</span>
-          </button>
-        </div>
+        {/* Replay */}
+        <button
+          onClick={() => {
+            soundSystem.playClick();
+            onReplayAll();
+          }}
+          className="btn-cyber-secondary"
+          style={{ padding: '14px 24px', fontSize: '0.9rem' }}
+        >
+          <RotateCcw size={18} />
+          <span>[ REPLAY LEVELS ]</span>
+        </button>
       </div>
     </div>
   );
