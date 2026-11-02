@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { ScreenType, MiniGameId, GameProgress } from './types/game';
 import { MusicPlayerPill } from './components/common/MusicPlayerPill';
+import { SystemBreachScreen } from './components/breach/SystemBreachScreen';
 import { BirthdayLockScreen } from './components/lock/BirthdayLockScreen';
-import { WelcomeScreen } from './components/welcome/WelcomeScreen';
 import { BirthdayFlapGame } from './components/games/BirthdayFlapGame';
 import { ArcadeHub } from './components/arcade/ArcadeHub';
 import { GtaChaosRunGame } from './components/games/GtaChaosRunGame';
@@ -14,15 +14,25 @@ import { GamingQuiz } from './components/quiz/GamingQuiz';
 import { PersonalQuiz } from './components/quiz/PersonalQuiz';
 import { MovieExperience } from './components/movies/MovieExperience';
 import { FinalSurprise } from './components/surprise/FinalSurprise';
+import { CommandTerminalModal } from './components/terminal/CommandTerminalModal';
+import { SystemStatusModal } from './components/dashboard/SystemStatusModal';
+import { MatrixRain } from './components/terminal/MatrixRain';
+import { soundSystem } from './utils/audioSystem';
 
 export const App: React.FC = () => {
-  const [currentScreen, setCurrentScreen] = useState<ScreenType>('LOCK');
+  const [currentScreen, setCurrentScreen] = useState<ScreenType>('BREACH');
   const [activeMiniGame, setActiveMiniGame] = useState<MiniGameId | null>(null);
 
-  // Load progress from localStorage
+  // Overlays
+  const [isCliOpen, setIsCliOpen] = useState<boolean>(false);
+  const [isDashboardOpen, setIsDashboardOpen] = useState<boolean>(false);
+  const [isMatrixActive, setIsMatrixActive] = useState<boolean>(false);
+
+  // Progress state
   const [progress, setProgress] = useState<GameProgress>(() => {
     return {
-      isUnlocked: localStorage.getItem('birthday_unlocked') === 'true',
+      isBreached: localStorage.getItem('southdev_breached') === 'true',
+      isUnlocked: localStorage.getItem('southdev_unlocked') === 'true',
       flapCompleted: localStorage.getItem('birthday_flap_completed') === 'true',
       flapBestScore: parseInt(localStorage.getItem('birthday_flap_best') || '0', 10),
       gtaCompleted: localStorage.getItem('birthday_gta_completed') === 'true',
@@ -41,12 +51,14 @@ export const App: React.FC = () => {
       personalQuizScore: parseInt(localStorage.getItem('birthday_pquiz_score') || '0', 10),
       movieQuizCompleted: localStorage.getItem('birthday_mquiz_completed') === 'true',
       movieQuizScore: parseInt(localStorage.getItem('birthday_mquiz_score') || '0', 10),
+      fragmentsCollected: JSON.parse(localStorage.getItem('southdev_fragments') || '[]'),
     };
   });
 
-  // Sync progress
+  // Sync to localStorage
   useEffect(() => {
-    localStorage.setItem('birthday_unlocked', progress.isUnlocked ? 'true' : 'false');
+    localStorage.setItem('southdev_breached', progress.isBreached ? 'true' : 'false');
+    localStorage.setItem('southdev_unlocked', progress.isUnlocked ? 'true' : 'false');
     localStorage.setItem('birthday_flap_completed', progress.flapCompleted ? 'true' : 'false');
     localStorage.setItem('birthday_gta_completed', progress.gtaCompleted ? 'true' : 'false');
     localStorage.setItem('birthday_spiderman_completed', progress.spidermanCompleted ? 'true' : 'false');
@@ -56,15 +68,46 @@ export const App: React.FC = () => {
     localStorage.setItem('birthday_gquiz_completed', progress.gamingQuizCompleted ? 'true' : 'false');
     localStorage.setItem('birthday_pquiz_completed', progress.personalQuizCompleted ? 'true' : 'false');
     localStorage.setItem('birthday_mquiz_completed', progress.movieQuizCompleted ? 'true' : 'false');
+    localStorage.setItem('southdev_fragments', JSON.stringify(progress.fragmentsCollected));
   }, [progress]);
 
-  // Handlers
-  const handleUnlockLock = () => {
+  // Global key listener for ~ to toggle Command Terminal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === '`' || e.key === '~') {
+        setIsCliOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  const awardFragment = (fragmentId: number) => {
+    setProgress((prev) => {
+      if (!prev.fragmentsCollected.includes(fragmentId)) {
+        soundSystem.playScore();
+        return {
+          ...prev,
+          fragmentsCollected: [...prev.fragmentsCollected, fragmentId],
+        };
+      }
+      return prev;
+    });
+  };
+
+  // Progression Handlers
+  const handleBreachComplete = () => {
+    setProgress((p) => ({ ...p, isBreached: true }));
+    setCurrentScreen('AUTH');
+  };
+
+  const handleAuthComplete = () => {
     setProgress((p) => ({ ...p, isUnlocked: true }));
-    setCurrentScreen('WELCOME');
+    setCurrentScreen('GAME_FLAP');
   };
 
   const handleFlapComplete = (score: number) => {
+    awardFragment(1);
     setProgress((p) => ({
       ...p,
       flapCompleted: true,
@@ -75,6 +118,7 @@ export const App: React.FC = () => {
   };
 
   const handleGtaComplete = (score: number) => {
+    awardFragment(2);
     setProgress((p) => ({
       ...p,
       gtaCompleted: true,
@@ -83,6 +127,7 @@ export const App: React.FC = () => {
   };
 
   const handleSpidermanComplete = (score: number) => {
+    awardFragment(3);
     setProgress((p) => ({
       ...p,
       spidermanCompleted: true,
@@ -91,6 +136,7 @@ export const App: React.FC = () => {
   };
 
   const handleFreefireComplete = (score: number) => {
+    awardFragment(4);
     setProgress((p) => ({
       ...p,
       freefireCompleted: true,
@@ -99,6 +145,7 @@ export const App: React.FC = () => {
   };
 
   const handleFoodComplete = (score: number) => {
+    awardFragment(5);
     setProgress((p) => ({
       ...p,
       foodCompleted: true,
@@ -140,25 +187,23 @@ export const App: React.FC = () => {
 
   return (
     <div style={{ position: 'relative', width: '100%', minHeight: '100vh', overflow: 'hidden' }}>
-      {/* Ambient background glows */}
-      <div className="ambient-glow glow-top-left" />
-      <div className="ambient-glow glow-bottom-right" />
-      <div className="ambient-glow glow-center" />
+      {/* Matrix Rain Stream Overlay */}
+      {isMatrixActive && <MatrixRain onClose={() => setIsMatrixActive(false)} />}
 
-      {/* Floating Audio Control Pill */}
-      <MusicPlayerPill />
+      {/* Floating Audio Control & CLI Toggle Pill */}
+      <MusicPlayerPill onOpenCli={() => setIsCliOpen(true)} />
 
-      {/* 1. Birthday Lock Screen */}
-      {currentScreen === 'LOCK' && (
-        <BirthdayLockScreen onUnlock={handleUnlockLock} />
+      {/* 1. Stage One: Fake System Breach & Boot */}
+      {currentScreen === 'BREACH' && (
+        <SystemBreachScreen onEnter={handleBreachComplete} />
       )}
 
-      {/* 2. Opening Welcome Screen */}
-      {currentScreen === 'WELCOME' && (
-        <WelcomeScreen onStart={() => setCurrentScreen('GAME_FLAP')} />
+      {/* 2. Stage Two: Birthday Authentication */}
+      {currentScreen === 'AUTH' && (
+        <BirthdayLockScreen onUnlock={handleAuthComplete} />
       )}
 
-      {/* 3. Game One: Birthday Flap Adventure */}
+      {/* 3. Stage Three: Birthday Flap Adventure */}
       {currentScreen === 'GAME_FLAP' && (
         <BirthdayFlapGame
           onLevelComplete={handleFlapComplete}
@@ -167,7 +212,7 @@ export const App: React.FC = () => {
         />
       )}
 
-      {/* 4. Birthday Arcade Hub & Games */}
+      {/* 4. Stage Four: South Dev Cyber Arcade */}
       {currentScreen === 'ARCADE' && (
         <>
           {activeMiniGame === null && (
@@ -178,6 +223,8 @@ export const App: React.FC = () => {
               onOpenPersonalQuiz={() => setCurrentScreen('QUIZ_PERSONAL')}
               onOpenMovieExperience={() => setCurrentScreen('MOVIE_EXPERIENCE')}
               onOpenSurprise={() => setCurrentScreen('SURPRISE')}
+              onOpenCli={() => setIsCliOpen(true)}
+              onOpenDashboard={() => setIsDashboardOpen(true)}
             />
           )}
 
@@ -226,7 +273,7 @@ export const App: React.FC = () => {
         </>
       )}
 
-      {/* 5. Gaming Quiz */}
+      {/* 5. Stage Five: South Dev Knowledge Database */}
       {currentScreen === 'QUIZ_GAMING' && (
         <GamingQuiz
           onComplete={handleGamingQuizComplete}
@@ -235,7 +282,7 @@ export const App: React.FC = () => {
         />
       )}
 
-      {/* 6. Funny Questions and Personal Quiz */}
+      {/* 6. Stage Six: Personal Data Interrogation */}
       {currentScreen === 'QUIZ_PERSONAL' && (
         <PersonalQuiz
           onComplete={handlePersonalQuizComplete}
@@ -244,7 +291,7 @@ export const App: React.FC = () => {
         />
       )}
 
-      {/* 7. Movie Lover Experience */}
+      {/* 7. Movie Knowledge Decryption */}
       {currentScreen === 'MOVIE_EXPERIENCE' && (
         <MovieExperience
           onComplete={handleMovieQuizComplete}
@@ -253,11 +300,11 @@ export const App: React.FC = () => {
         />
       )}
 
-      {/* 8. Final Birthday Surprise signed by Aakash & Sanjay */}
+      {/* 8. Final Stage: Birthday Card Signed by Aakash & Sanjay */}
       {currentScreen === 'SURPRISE' && (
         <FinalSurprise
           onReplayAll={() => {
-            setCurrentScreen('LOCK');
+            setCurrentScreen('BREACH');
             setActiveMiniGame(null);
           }}
           onBackToArcade={() => {
@@ -266,6 +313,26 @@ export const App: React.FC = () => {
           }}
         />
       )}
+
+      {/* Hidden Command Terminal Modal */}
+      <CommandTerminalModal
+        isOpen={isCliOpen}
+        onClose={() => setIsCliOpen(false)}
+        progress={progress}
+        onNavigateArcade={() => {
+          setCurrentScreen('ARCADE');
+          setActiveMiniGame(null);
+        }}
+        onToggleMatrix={() => setIsMatrixActive((prev) => !prev)}
+        onUnlockSecretFragment={() => awardFragment(1)}
+      />
+
+      {/* System Status Dashboard Modal */}
+      <SystemStatusModal
+        isOpen={isDashboardOpen}
+        onClose={() => setIsDashboardOpen(false)}
+        progress={progress}
+      />
     </div>
   );
 };

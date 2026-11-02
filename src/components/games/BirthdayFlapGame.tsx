@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Phaser from 'phaser';
 import confetti from 'canvas-confetti';
-import { ArrowLeft, RotateCcw, Trophy, Sparkles, ChevronRight } from 'lucide-react';
+import { ArrowLeft, RotateCcw, Trophy, Terminal, ChevronRight, ShieldAlert } from 'lucide-react';
 import { BIRTHDAY_CONFIG } from '../../config/birthdayConfig';
 import { soundSystem } from '../../utils/audioSystem';
 
@@ -29,36 +29,32 @@ export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({
   useEffect(() => {
     if (!gameContainerRef.current) return;
 
-    // Destroy any existing instance
     if (phaserGameRef.current) {
       phaserGameRef.current.destroy(true);
     }
 
     const GAME_WIDTH = 420;
     const GAME_HEIGHT = 640;
-    const GROUND_HEIGHT = 80;
+    const GROUND_HEIGHT = 70;
 
-    class FlapScene extends Phaser.Scene {
+    class CyberFlapScene extends Phaser.Scene {
       private player!: Phaser.GameObjects.Container;
       private playerPhysicsBody!: Phaser.Physics.Arcade.Body;
       private obstacles!: Phaser.Physics.Arcade.Group;
       private scoreParticles!: Phaser.GameObjects.Particles.ParticleEmitter;
-      private groundTiles!: Phaser.GameObjects.TileSprite;
-      private cloudTiles!: Phaser.GameObjects.TileSprite;
+      private gridFloor!: Phaser.GameObjects.TileSprite;
+      private codeFragments!: Phaser.GameObjects.Group;
       private currentScore: number = 0;
       private localBestScore: number = 0;
       private currentGameState: 'IDLE' | 'PLAYING' | 'GAMEOVER' | 'COMPLETE' = 'IDLE';
       private obstacleTimer!: Phaser.Time.TimerEvent;
       private passedPipes: Set<Phaser.GameObjects.GameObject> = new Set();
-      private capeWave: number = 0;
-      private capeGraphic!: Phaser.GameObjects.Graphics;
 
       constructor() {
-        super({ key: 'FlapScene' });
+        super({ key: 'CyberFlapScene' });
       }
 
       preload() {
-        // Load the character face image configured in birthdayConfig
         this.load.image('characterFace', BIRTHDAY_CONFIG.characterFaceUrl);
       }
 
@@ -68,87 +64,87 @@ export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({
         this.currentGameState = 'IDLE';
         this.passedPipes.clear();
 
-        // 1. Dynamic Backgrounds
+        // 1. Cyber City Background Grid
         const bgGrad = this.add.graphics();
-        bgGrad.fillGradientStyle(0x130e2e, 0x130e2e, 0x090a14, 0x090a14, 1);
+        bgGrad.fillGradientStyle(0x05070a, 0x05070a, 0x0a141b, 0x0a141b, 1);
         bgGrad.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
 
-        // Twinkling stars
-        for (let i = 0; i < 40; i++) {
-          const starX = Phaser.Math.Between(10, GAME_WIDTH - 10);
-          const starY = Phaser.Math.Between(10, GAME_HEIGHT - GROUND_HEIGHT - 30);
-          const starRadius = Phaser.Math.FloatBetween(1, 2.5);
-          const star = this.add.circle(starX, starY, starRadius, 0xffd700, Phaser.Math.FloatBetween(0.3, 0.9));
+        // Neon cyber grid lines
+        const gridG = this.add.graphics();
+        gridG.lineStyle(1, 0x00ff66, 0.08);
+        for (let x = 0; x < GAME_WIDTH; x += 32) {
+          gridG.lineBetween(x, 0, x, GAME_HEIGHT);
+        }
+        for (let y = 0; y < GAME_HEIGHT; y += 32) {
+          gridG.lineBetween(0, y, GAME_WIDTH, y);
+        }
+
+        // Floating hex code fragments in background
+        const hexCodes = ['0x7F', '0x2A', '0xSOUTH', '0xDEV', '0x2005', '0xACK'];
+        this.codeFragments = this.add.group();
+        for (let i = 0; i < 8; i++) {
+          const txt = this.add.text(
+            Phaser.Math.Between(20, GAME_WIDTH - 40),
+            Phaser.Math.Between(40, GAME_HEIGHT - 120),
+            hexCodes[i % hexCodes.length],
+            { font: '10px Fira Code', color: '#00ff66' }
+          );
+          txt.setAlpha(0.2);
           this.tweens.add({
-            targets: star,
-            alpha: 0.1,
-            duration: Phaser.Math.Between(1200, 2400),
+            targets: txt,
+            y: txt.y - 40,
+            alpha: 0.05,
+            duration: Phaser.Math.Between(2000, 4000),
             yoyo: true,
             repeat: -1,
-            ease: 'Sine.easeInOut',
-            delay: Phaser.Math.Between(0, 1500),
           });
         }
 
-        // Procedural Clouds
-        const cloudGraphics = this.make.graphics({ x: 0, y: 0 });
-        cloudGraphics.fillStyle(0xffffff, 0.12);
-        cloudGraphics.fillCircle(25, 20, 18);
-        cloudGraphics.fillCircle(45, 16, 22);
-        cloudGraphics.fillCircle(68, 20, 16);
-        cloudGraphics.fillRoundedRect(10, 22, 70, 18, 9);
-        cloudGraphics.generateTexture('cloudTexture', 90, 44);
-        cloudGraphics.destroy();
-
-        this.cloudTiles = this.add.tileSprite(0, 120, GAME_WIDTH, 44, 'cloudTexture');
-        this.cloudTiles.setOrigin(0, 0);
-
-        // 2. Score Sparkle Particles
+        // 2. Score Particle Emitter (Neon Green Sparkles)
         const sparkGraphics = this.make.graphics({ x: 0, y: 0 });
-        sparkGraphics.fillStyle(0xffd700, 1);
-        sparkGraphics.fillCircle(4, 4, 4);
-        sparkGraphics.generateTexture('sparkleTexture', 8, 8);
+        sparkGraphics.fillStyle(0x00ff66, 1);
+        sparkGraphics.fillCircle(4, 4, 3);
+        sparkGraphics.generateTexture('neonSparkleTexture', 8, 8);
         sparkGraphics.destroy();
 
-        this.scoreParticles = this.add.particles(0, 0, 'sparkleTexture', {
-          speed: { min: 60, max: 180 },
+        this.scoreParticles = this.add.particles(0, 0, 'neonSparkleTexture', {
+          speed: { min: 80, max: 200 },
           scale: { start: 1, end: 0 },
-          lifespan: 600,
-          gravityY: 100,
+          lifespan: 500,
+          gravityY: 150,
           emitting: false,
         });
 
         // 3. Obstacles Group
         this.obstacles = this.physics.add.group();
 
-        // 4. Ground Layer
+        // 4. Ground Layer (Neon Cyber-Floor)
         const groundGraphics = this.make.graphics({ x: 0, y: 0 });
-        groundGraphics.fillStyle(0x1a1c30, 1);
+        groundGraphics.fillStyle(0x06090e, 1);
         groundGraphics.fillRect(0, 0, 40, GROUND_HEIGHT);
-        // Festive stripes on ground
-        groundGraphics.fillStyle(0xffd700, 0.7);
-        groundGraphics.fillTriangle(0, 0, 15, 0, 0, 15);
-        groundGraphics.fillTriangle(20, 0, 35, 0, 0, 35);
-        groundGraphics.lineStyle(3, 0xffd700, 0.9);
+        groundGraphics.lineStyle(2, 0x00ff66, 0.9);
         groundGraphics.lineBetween(0, 2, 40, 2);
-        groundGraphics.generateTexture('groundTexture', 40, GROUND_HEIGHT);
+        // Floor grid blocks
+        groundGraphics.lineStyle(1, 0x00e5ff, 0.4);
+        groundGraphics.lineBetween(20, 2, 20, GROUND_HEIGHT);
+        groundGraphics.generateTexture('cyberGroundTexture', 40, GROUND_HEIGHT);
         groundGraphics.destroy();
 
-        this.groundTiles = this.add.tileSprite(
+        this.gridFloor = this.add.tileSprite(
           0,
           GAME_HEIGHT - GROUND_HEIGHT,
           GAME_WIDTH,
           GROUND_HEIGHT,
-          'groundTexture'
+          'cyberGroundTexture'
         );
-        this.groundTiles.setOrigin(0, 0);
-        this.physics.add.existing(this.groundTiles, true);
+        this.gridFloor.setOrigin(0, 0);
+        this.physics.add.existing(this.gridFloor, true);
 
-        // 5. Build Animated Player Character
+        // 5. Build Player Character (South Dev Face + Cyber Jetpack/Cape)
         this.buildPlayerCharacter();
 
         // 6. Collisions
-        this.physics.add.collider(this.player, this.groundTiles, () => {
+        this.physics.add.collider(this.player, this.gridFloor, () => {
           this.triggerGameOver();
         });
 
@@ -160,7 +156,7 @@ export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({
         this.input.on('pointerdown', () => this.handleJump());
         this.input.keyboard?.on('keydown-SPACE', () => this.handleJump());
 
-        // Spawn timer
+        // Obstacle Spawn Timer
         this.obstacleTimer = this.time.addEvent({
           delay: 1700,
           callback: this.spawnObstaclePair,
@@ -172,37 +168,31 @@ export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({
 
       buildPlayerCharacter() {
         this.player = this.add.container(100, GAME_HEIGHT / 2 - 40);
-        this.player.setSize(52, 52);
+        this.player.setSize(50, 50);
         this.physics.world.enable(this.player);
         this.playerPhysicsBody = this.player.body as Phaser.Physics.Arcade.Body;
-        this.playerPhysicsBody.setCircle(24, 2, 2);
+        this.playerPhysicsBody.setCircle(22, 3, 3);
         this.playerPhysicsBody.setCollideWorldBounds(true);
         this.playerPhysicsBody.allowGravity = false;
 
-        // Animated Cape behind player
-        this.capeGraphic = this.add.graphics();
-        this.player.add(this.capeGraphic);
+        // Cyber Aura
+        const aura = this.add.circle(0, 2, 26, 0x00ff66, 0.2);
+        this.player.add(aura);
 
-        // Hero body aura
-        const bodyAura = this.add.circle(0, 2, 26, 0xffd700, 0.25);
-        this.player.add(bodyAura);
+        // Cyber Jetpack Wings / Thrusters
+        const thruster = this.add.rectangle(-14, 8, 12, 20, 0x00e5ff);
+        this.player.add(thruster);
 
-        // Flying body suit
-        const bodySuit = this.add.ellipse(0, 10, 34, 26, 0x6a11cb, 1);
-        this.player.add(bodySuit);
-
-        // Birthday face
+        // Face
         const faceImg = this.add.image(0, -2, 'characterFace');
-        faceImg.setDisplaySize(48, 48);
+        faceImg.setDisplaySize(46, 46);
         this.player.add(faceImg);
 
-        // Sparkle Party Hat
-        const hat = this.add.triangle(0, -32, -14, 12, 14, 12, 0, -12, 0xff4081);
-        const hatPomPom = this.add.circle(0, -44, 4, 0xffd700);
-        this.player.add(hat);
-        this.player.add(hatPomPom);
+        // Cyber Visor / Headpiece
+        const visor = this.add.rectangle(0, -6, 32, 6, 0x00ff66, 0.85);
+        this.player.add(visor);
 
-        // Floating idle tween before starting
+        // Floating idle
         this.tweens.add({
           targets: this.player,
           y: GAME_HEIGHT / 2 - 20,
@@ -228,7 +218,6 @@ export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({
         soundSystem.playJump();
         this.playerPhysicsBody.setVelocityY(-310);
 
-        // Tilt up
         this.tweens.killTweensOf(this.player);
         this.tweens.add({
           targets: this.player,
@@ -241,7 +230,7 @@ export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({
       spawnObstaclePair() {
         if (this.currentGameState !== 'PLAYING') return;
 
-        const gap = Math.max(145, 175 - Math.floor(this.currentScore / 3) * 5); // gradual challenge
+        const gap = Math.max(145, 175 - Math.floor(this.currentScore / 3) * 5);
         const speed = -(150 + Math.min(60, this.currentScore * 3));
         const minTop = 60;
         const maxTop = GAME_HEIGHT - GROUND_HEIGHT - gap - 60;
@@ -249,83 +238,68 @@ export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({
         const bottomY = topHeight + gap;
         const bottomHeight = GAME_HEIGHT - GROUND_HEIGHT - bottomY;
 
-        // TOP CANDLE TOWER
-        const topObstacle = this.createCandleTower(GAME_WIDTH + 40, 0, 56, topHeight, true);
+        // Top Digital Barrier
+        const topObstacle = this.createCyberBarrier(GAME_WIDTH + 40, 0, 54, topHeight, true);
         this.obstacles.add(topObstacle);
-        const topBody = topObstacle.body as Phaser.Physics.Arcade.Body;
-        topBody.setVelocityX(speed);
-        topBody.setImmovable(true);
-        topBody.allowGravity = false;
+        (topObstacle.body as Phaser.Physics.Arcade.Body).setVelocityX(speed);
+        (topObstacle.body as Phaser.Physics.Arcade.Body).setImmovable(true);
+        (topObstacle.body as Phaser.Physics.Arcade.Body).allowGravity = false;
 
-        // BOTTOM CANDLE TOWER
-        const bottomObstacle = this.createCandleTower(GAME_WIDTH + 40, bottomY, 56, bottomHeight, false);
+        // Bottom Digital Barrier
+        const bottomObstacle = this.createCyberBarrier(GAME_WIDTH + 40, bottomY, 54, bottomHeight, false);
         this.obstacles.add(bottomObstacle);
-        const bottomBody = bottomObstacle.body as Phaser.Physics.Arcade.Body;
-        bottomBody.setVelocityX(speed);
-        bottomBody.setImmovable(true);
-        bottomBody.allowGravity = false;
+        (bottomObstacle.body as Phaser.Physics.Arcade.Body).setVelocityX(speed);
+        (bottomObstacle.body as Phaser.Physics.Arcade.Body).setImmovable(true);
+        (bottomObstacle.body as Phaser.Physics.Arcade.Body).allowGravity = false;
       }
 
-      createCandleTower(x: number, y: number, width: number, height: number, isTop: boolean) {
+      createCyberBarrier(x: number, y: number, width: number, height: number, isTop: boolean) {
         const container = this.add.container(x, y);
         container.setSize(width, height);
         this.physics.world.enable(container);
 
         const g = this.add.graphics();
-        // Candle Pillar Gradient/Colors
-        const baseColor = isTop ? 0x7c3aed : 0xec4899;
-        g.fillStyle(baseColor, 1);
-        g.fillRoundedRect(0, 0, width, height, 10);
+        // Cyber pillar
+        g.fillStyle(0x0a141b, 1);
+        g.fillRoundedRect(0, 0, width, height, 4);
 
-        // Candle Stripes
-        g.fillStyle(0xffd700, 0.85);
-        for (let py = 15; py < height; py += 32) {
-          g.fillRect(4, py, width - 8, 10);
+        // Neon barrier rim
+        g.lineStyle(2, 0x00ff66, 0.9);
+        g.strokeRoundedRect(0, 0, width, height, 4);
+
+        // Circuit line inside barrier
+        g.lineStyle(1, 0x00e5ff, 0.7);
+        g.lineBetween(width / 2, 4, width / 2, height - 4);
+        for (let py = 16; py < height - 10; py += 30) {
+          g.strokeCircle(width / 2, py, 4);
         }
 
-        // Candle Rim
-        g.lineStyle(2, 0xffffff, 0.4);
-        g.strokeRoundedRect(0, 0, width, height, 10);
+        // Barrier Core Tip Node
+        const tipY = isTop ? height - 6 : 6;
+        const coreNode = this.add.circle(width / 2, tipY, 5, 0x00ff66);
 
-        // Candle Flame at tip
-        const flameY = isTop ? height - 6 : 4;
-        const flame = this.add.triangle(width / 2, flameY, -6, 10, 6, 10, 0, -8, 0xffa500);
-        const flameInner = this.add.circle(width / 2, flameY + 4, 3, 0xffeb3b);
-
-        container.add([g, flame, flameInner]);
+        container.add([g, coreNode]);
         return container;
       }
 
-      update(time: number) {
-        // Parallax background movement
+      update() {
         if (this.currentGameState === 'PLAYING') {
-          this.cloudTiles.tilePositionX += 0.35;
-          this.groundTiles.tilePositionX += 2.6;
+          this.gridFloor.tilePositionX += 2.5;
 
-          // Animated cape fluttering
-          this.capeWave += 0.25;
-          this.capeGraphic.clear();
-          this.capeGraphic.fillStyle(0xff3366, 0.95);
-          const capeOffset = Math.sin(this.capeWave) * 6;
-          this.capeGraphic.fillTriangle(-12, 6, -34 + capeOffset, 22, -14, 18);
-
-          // Tilt down smoothly when falling
           if (this.playerPhysicsBody.velocity.y > 60) {
             this.player.angle = Math.min(65, this.player.angle + 2.4);
           }
 
-          // Check scoring
+          // Check score
           this.obstacles.getChildren().forEach((child) => {
             const obstacle = child as Phaser.GameObjects.Container;
             if (!this.passedPipes.has(obstacle) && obstacle.x + obstacle.width < this.player.x) {
               this.passedPipes.add(obstacle);
-              // Each pair has 2 obstacles, so count score once per pair
               if (this.passedPipes.size % 2 === 0) {
                 this.handleScore();
               }
             }
 
-            // Cleanup offscreen obstacles
             if (obstacle.x < -80) {
               this.obstacles.remove(obstacle, true, true);
             }
@@ -338,7 +312,6 @@ export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({
         setScore(this.currentScore);
         soundSystem.playScore();
 
-        // Emit celebration sparkles
         this.scoreParticles.emitParticleAt(this.player.x + 20, this.player.y, 8);
 
         if (this.currentScore > this.localBestScore) {
@@ -347,7 +320,6 @@ export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({
           localStorage.setItem('birthday_flap_best', this.localBestScore.toString());
         }
 
-        // Check Level Complete Goal!
         if (this.currentScore >= levelGoal && this.currentGameState !== 'COMPLETE') {
           this.triggerLevelComplete();
         }
@@ -362,8 +334,6 @@ export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({
         this.cameras.main.shake(250, 0.02);
         this.obstacleTimer.paused = true;
         this.playerPhysicsBody.setVelocity(0, 200);
-
-        // Stop all moving obstacles
         this.obstacles.setVelocityX(0);
       }
 
@@ -375,15 +345,13 @@ export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({
         this.obstacleTimer.paused = true;
         this.obstacles.setVelocityX(0);
 
-        // Big Confetti burst
         confetti({
           particleCount: 120,
           spread: 80,
           origin: { y: 0.5 },
-          colors: ['#ffd700', '#ff4081', '#00e5ff', '#7c3aed'],
+          colors: ['#00ff66', '#00e5ff', '#ffd700', '#ffffff'],
         });
 
-        // Trigger callback to update arcade progress
         onLevelComplete(this.currentScore);
       }
 
@@ -399,18 +367,16 @@ export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({
       parent: gameContainerRef.current,
       width: GAME_WIDTH,
       height: GAME_HEIGHT,
-      backgroundColor: '#0d0f1d',
+      backgroundColor: '#05070a',
       physics: {
         default: 'arcade',
-        arcade: {
-          debug: false,
-        },
+        arcade: { debug: false },
       },
       scale: {
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH,
       },
-      scene: [FlapScene],
+      scene: [CyberFlapScene],
     };
 
     const game = new Phaser.Game(config);
@@ -425,7 +391,7 @@ export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({
   const handleRestart = () => {
     soundSystem.playClick();
     if (phaserGameRef.current) {
-      const scene = phaserGameRef.current.scene.getScene('FlapScene') as any;
+      const scene = phaserGameRef.current.scene.getScene('CyberFlapScene') as any;
       if (scene && scene.restartGame) {
         scene.restartGame();
       }
@@ -443,9 +409,10 @@ export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({
         justifyContent: 'center',
         padding: '16px 12px',
         zIndex: 10,
+        fontFamily: 'var(--font-mono)',
       }}
     >
-      {/* Top Bar Navigation & Info */}
+      {/* Top Header */}
       <div
         style={{
           width: '100%',
@@ -463,44 +430,43 @@ export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({
               soundSystem.playClick();
               onBackToArcade();
             }}
-            className="btn-secondary"
-            style={{ padding: '8px 14px', fontSize: '0.85rem' }}
+            className="btn-cyber-secondary"
+            style={{ padding: '8px 14px', fontSize: '0.82rem' }}
           >
-            <ArrowLeft size={16} />
-            <span>Arcade Menu</span>
+            <ArrowLeft size={15} />
+            <span>[ ARCADE_HUB ]</span>
           </button>
         ) : (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#ffd700' }}>
-            <Sparkles size={18} />
-            <span style={{ fontSize: '0.9rem', fontWeight: 700 }}>LEVEL 1: BIRTHDAY FLAP</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#00ff66', fontSize: '0.85rem', fontWeight: 800 }}>
+            <Terminal size={16} />
+            <span>MODULE 01: FLAP_PROTOCOL</span>
           </div>
         )}
 
-        {/* Best Score Trophy */}
         <div
           style={{
             display: 'flex',
             alignItems: 'center',
             gap: '6px',
-            background: 'rgba(255, 215, 0, 0.1)',
-            border: '1px solid rgba(255, 215, 0, 0.3)',
+            background: 'rgba(0, 255, 102, 0.08)',
+            border: '1px solid rgba(0, 255, 102, 0.3)',
             padding: '6px 14px',
-            borderRadius: '9999px',
-            fontSize: '0.85rem',
+            borderRadius: '4px',
+            fontSize: '0.82rem',
             fontWeight: 700,
-            color: '#ffd700',
+            color: '#00ff66',
           }}
         >
-          <Trophy size={15} />
-          <span>BEST: {bestScore}</span>
+          <Trophy size={14} />
+          <span>RECORD: {bestScore}</span>
         </div>
       </div>
 
-      {/* Phaser Canvas Container */}
+      {/* Canvas Wrapper */}
       <div className="game-canvas-wrapper">
         <div ref={gameContainerRef} style={{ width: '100%', height: '100%' }} />
 
-        {/* In-Game Score Overlay Header */}
+        {/* Live Score Overlay */}
         <div
           style={{
             position: 'absolute',
@@ -516,11 +482,10 @@ export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({
         >
           <div
             style={{
-              fontFamily: 'Outfit, sans-serif',
               fontSize: '2.8rem',
               fontWeight: 900,
-              color: '#ffffff',
-              textShadow: '0 0 16px rgba(255, 215, 0, 0.8), 0 3px 6px rgba(0,0,0,0.8)',
+              color: '#00ff66',
+              textShadow: '0 0 16px rgba(0, 255, 102, 0.8)',
               lineHeight: 1,
             }}
           >
@@ -528,19 +493,18 @@ export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({
           </div>
           <span
             style={{
-              fontSize: '0.75rem',
-              color: '#ffd700',
+              fontSize: '0.72rem',
+              color: '#00e5ff',
               fontWeight: 700,
-              letterSpacing: '0.06em',
+              letterSpacing: '0.08em',
               textTransform: 'uppercase',
-              textShadow: '0 2px 4px rgba(0,0,0,0.8)',
             }}
           >
-            Target: {levelGoal}
+            GOAL: {levelGoal} UNITS
           </span>
         </div>
 
-        {/* Tap to Start / Idle Banner */}
+        {/* Idle Start Prompt */}
         {gameState === 'IDLE' && (
           <div
             style={{
@@ -550,34 +514,34 @@ export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              background: 'rgba(0, 0, 0, 0.35)',
+              background: 'rgba(5, 7, 10, 0.5)',
               zIndex: 25,
               pointerEvents: 'none',
             }}
           >
             <div
-              className="glass-panel"
+              className="terminal-panel"
               style={{
-                padding: '16px 28px',
+                padding: '16px 24px',
                 textAlign: 'center',
-                animation: 'bounce 1.5s infinite',
+                border: '1px solid #00ff66',
               }}
             >
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#ffd700', marginBottom: '4px' }}>
-                TAP OR PRESS SPACE
-              </h3>
-              <p style={{ fontSize: '0.85rem', color: '#e2e8f0' }}>Flap past 10 obstacles to unlock the Arcade!</p>
+              <div style={{ fontSize: '1rem', fontWeight: 800, color: '#00ff66', marginBottom: '4px' }}>
+                [ TAP / PRESS SPACE TO FLY ]
+              </div>
+              <div style={{ fontSize: '0.78rem', color: '#cbd5e1' }}>Bypass 10 digital barriers to access Arcade!</div>
             </div>
           </div>
         )}
 
-        {/* Game Over Modal Overlay */}
+        {/* Game Over Modal */}
         {gameState === 'GAMEOVER' && (
           <div
             style={{
               position: 'absolute',
               inset: 0,
-              background: 'rgba(9, 10, 20, 0.88)',
+              background: 'rgba(5, 7, 10, 0.92)',
               backdropFilter: 'blur(8px)',
               display: 'flex',
               flexDirection: 'column',
@@ -589,56 +553,67 @@ export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({
             }}
           >
             <div
-              className="glass-panel"
+              className="terminal-panel"
               style={{
                 padding: '32px 24px',
                 width: '100%',
                 maxWidth: '320px',
-                border: '1px solid rgba(255, 64, 129, 0.4)',
-                boxShadow: '0 12px 35px rgba(255, 64, 129, 0.25)',
+                border: '1px solid #ff3344',
               }}
             >
-              <h2 style={{ fontSize: '1.8rem', fontWeight: 900, color: '#ff4081', marginBottom: '12px' }}>
-                GAME OVER
-              </h2>
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  color: '#ff3344',
+                  fontWeight: 800,
+                  fontSize: '1.2rem',
+                  marginBottom: '14px',
+                }}
+              >
+                <ShieldAlert size={20} />
+                <span>FIREWALL COLLISION</span>
+              </div>
 
               <div
                 style={{
-                  background: 'rgba(255, 255, 255, 0.06)',
-                  borderRadius: '14px',
-                  padding: '16px',
-                  marginBottom: '24px',
+                  background: 'rgba(255, 51, 68, 0.08)',
+                  borderRadius: '4px',
+                  padding: '14px',
+                  marginBottom: '20px',
+                  border: '1px solid rgba(255, 51, 68, 0.25)',
                 }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                  <span style={{ color: '#94a3b8', fontSize: '0.9rem' }}>Score</span>
-                  <span style={{ fontWeight: 800, fontSize: '1.2rem', color: '#fff' }}>{score}</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                  <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Score:</span>
+                  <span style={{ fontWeight: 800, color: '#fff' }}>{score}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: '#94a3b8', fontSize: '0.9rem' }}>Best Score</span>
-                  <span style={{ fontWeight: 800, fontSize: '1.2rem', color: '#ffd700' }}>{bestScore}</span>
+                  <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Best Record:</span>
+                  <span style={{ fontWeight: 800, color: '#00ff66' }}>{bestScore}</span>
                 </div>
               </div>
 
               <button
                 onClick={handleRestart}
-                className="btn-primary-glow"
-                style={{ width: '100%', padding: '14px 20px', fontSize: '1.05rem' }}
+                className="btn-cyber-primary"
+                style={{ width: '100%', padding: '12px', fontSize: '0.95rem' }}
               >
-                <RotateCcw size={18} />
-                <span>TRY AGAIN</span>
+                <RotateCcw size={16} />
+                <span>[ RESTART SEQUENCE ]</span>
               </button>
             </div>
           </div>
         )}
 
-        {/* Level 1 Complete Overlay */}
+        {/* Level Complete Modal */}
         {gameState === 'COMPLETE' && (
           <div
             style={{
               position: 'absolute',
               inset: 0,
-              background: 'rgba(9, 10, 20, 0.92)',
+              background: 'rgba(5, 7, 10, 0.94)',
               backdropFilter: 'blur(10px)',
               display: 'flex',
               flexDirection: 'column',
@@ -650,42 +625,35 @@ export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({
             }}
           >
             <div
-              className="glass-panel"
+              className="terminal-panel"
               style={{
                 padding: '36px 24px',
                 width: '100%',
                 maxWidth: '340px',
-                border: '1px solid rgba(255, 215, 0, 0.6)',
-                boxShadow: '0 16px 45px rgba(255, 215, 0, 0.35)',
+                border: '1px solid #00ff66',
               }}
             >
               <div
                 style={{
-                  width: '64px',
-                  height: '64px',
-                  borderRadius: '50%',
-                  background: 'rgba(255, 215, 0, 0.15)',
-                  border: '2px solid #ffd700',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  margin: '0 auto 16px',
-                  boxShadow: '0 0 25px rgba(255, 215, 0, 0.5)',
+                  color: '#00ff66',
+                  fontSize: '0.85rem',
+                  fontWeight: 800,
+                  letterSpacing: '0.08em',
+                  marginBottom: '8px',
                 }}
               >
-                <Trophy size={32} color="#ffd700" />
+                GAME MODULE 01 COMPLETE
               </div>
 
               <h2
-                className="gold-text-shimmer"
-                style={{ fontSize: '1.8rem', fontWeight: 900, marginBottom: '8px' }}
+                className="text-neon-green"
+                style={{ fontSize: '1.6rem', fontWeight: 900, marginBottom: '8px' }}
               >
-                Level 1 Complete!
+                ACCESSING SOUTH DEV ARCADE...
               </h2>
 
-              <p style={{ color: '#cbd5e1', fontSize: '0.92rem', marginBottom: '24px' }}>
-                You scored <strong style={{ color: '#ffd700' }}>{score}</strong>! The full Birthday Arcade has been
-                unlocked.
+              <p style={{ color: '#cbd5e1', fontSize: '0.88rem', marginBottom: '24px' }}>
+                You scored <strong style={{ color: '#00ff66' }}>{score}</strong>! The full cyber arcade has been decrypted.
               </p>
 
               <button
@@ -693,43 +661,29 @@ export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({
                   soundSystem.playClick();
                   onLevelComplete(score);
                 }}
-                className="btn-primary-glow pulse-glow"
-                style={{
-                  width: '100%',
-                  padding: '14px 20px',
-                  fontSize: '1.05rem',
-                  marginBottom: '12px',
-                }}
+                className="btn-cyber-primary pulse-cyber"
+                style={{ width: '100%', padding: '14px', fontSize: '1rem', marginBottom: '12px' }}
               >
-                <span>ENTER BIRTHDAY ARCADE</span>
+                <span>[ ENTER CYBER ARCADE ]</span>
                 <ChevronRight size={18} />
               </button>
 
               <button
                 onClick={handleRestart}
-                className="btn-secondary"
-                style={{ width: '100%', padding: '10px 16px', fontSize: '0.9rem' }}
+                className="btn-cyber-secondary"
+                style={{ width: '100%', padding: '10px', fontSize: '0.85rem' }}
               >
-                <RotateCcw size={16} />
-                <span>Replay Flap</span>
+                <RotateCcw size={15} />
+                <span>Replay Module</span>
               </button>
             </div>
           </div>
         )}
       </div>
 
-      {/* Control Helper for Mobile / Desktop */}
-      <div
-        style={{
-          marginTop: '12px',
-          color: '#94a3b8',
-          fontSize: '0.82rem',
-          textAlign: 'center',
-        }}
-      >
-        Click anywhere, tap screen, or press <kbd style={{ background: '#1e2238', padding: '2px 6px', borderRadius: '4px', border: '1px solid #334155' }}>Space</kbd> to flap!
+      <div style={{ marginTop: '12px', color: '#5c7866', fontSize: '0.78rem', textAlign: 'center' }}>
+        Click, tap screen, or press <kbd style={{ background: '#0a141b', padding: '2px 6px', border: '1px solid #00ff66', color: '#00ff66' }}>Space</kbd> to fly!
       </div>
     </div>
   );
 };
-

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Play, Pause, Volume2, VolumeX, Disc3, Music2 } from 'lucide-react';
+import { Play, Pause, Volume2, VolumeX, Disc3, Music2, Cpu } from 'lucide-react';
 import { useAudio } from '../../utils/useAudio';
 import { BIRTHDAY_CONFIG } from '../../config/birthdayConfig';
 
@@ -38,47 +38,44 @@ export const AudioPlayer: React.FC = () => {
 
   return (
     <div
-      className="glass-panel"
+      className="terminal-panel"
       style={{
         width: '100%',
-        maxWidth: '520px',
-        padding: '24px 28px',
-        border: '1px solid rgba(255, 215, 0, 0.4)',
-        boxShadow: '0 16px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(255, 215, 0, 0.15)',
+        maxWidth: '540px',
+        padding: '20px 24px',
+        border: '1px solid rgba(0, 255, 102, 0.4)',
+        boxShadow: '0 0 30px rgba(0, 255, 102, 0.15)',
         position: 'relative',
         overflow: 'hidden',
+        fontFamily: 'var(--font-mono)',
       }}
     >
-      {/* Vinyl record spinning badge / Song Info */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '18px' }}>
+      {/* Audio Header */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '16px' }}>
         <div
           style={{
-            width: '52px',
-            height: '52px',
-            borderRadius: '50%',
-            background: 'linear-gradient(135deg, #2a1645 0%, #151025 100%)',
-            border: '2px solid rgba(255, 215, 0, 0.6)',
+            width: '46px',
+            height: '46px',
+            borderRadius: '4px',
+            background: 'rgba(0, 255, 102, 0.1)',
+            border: '1px solid #00ff66',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            boxShadow: isPlaying ? '0 0 20px rgba(255, 215, 0, 0.4)' : 'none',
-            animation: isPlaying ? 'spin 6s linear infinite' : 'none',
+            color: '#00ff66',
+            boxShadow: isPlaying ? '0 0 16px rgba(0, 255, 102, 0.5)' : 'none',
             flexShrink: 0,
           }}
         >
-          {isPlaying ? (
-            <Disc3 size={28} color="#ffd700" />
-          ) : (
-            <Music2 size={24} color="#94a3b8" />
-          )}
+          {isPlaying ? <Disc3 size={24} style={{ animation: 'spin 4s linear infinite' }} /> : <Music2 size={22} />}
         </div>
 
-        <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ flex: 1, minWidth: 0, textAlign: 'left' }}>
           <div
             style={{
-              fontSize: '1.05rem',
+              fontSize: '0.94rem',
               fontWeight: 800,
-              color: '#ffffff',
+              color: '#e2fce8',
               whiteSpace: 'nowrap',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
@@ -88,9 +85,9 @@ export const AudioPlayer: React.FC = () => {
           </div>
           <div
             style={{
-              fontSize: '0.82rem',
-              color: '#ffd700',
-              fontWeight: 500,
+              fontSize: '0.78rem',
+              color: '#00ff66',
+              fontWeight: 600,
               whiteSpace: 'nowrap',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
@@ -102,16 +99,16 @@ export const AudioPlayer: React.FC = () => {
 
         {/* Dancing Visualizer Bars */}
         <div className={`equalizer-bars ${!isPlaying ? 'equalizer-paused' : ''}`}>
-          <div className="eq-bar" />
-          <div className="eq-bar" />
-          <div className="eq-bar" />
-          <div className="eq-bar" />
+          <div className="eq-bar" style={{ background: '#00ff66' }} />
+          <div className="eq-bar" style={{ background: '#00e5ff' }} />
+          <div className="eq-bar" style={{ background: '#00ff66' }} />
+          <div className="eq-bar" style={{ background: '#00e5ff' }} />
         </div>
       </div>
 
-      {/* Progress Bar & Time */}
+      {/* Scrub Range */}
       <div style={{ marginBottom: '16px' }}>
-        <div style={{ position: 'relative', width: '100%', height: '8px', marginBottom: '8px' }}>
+        <div style={{ position: 'relative', width: '100%', height: '6px', marginBottom: '6px' }}>
           <input
             type="range"
             min={0}
@@ -121,9 +118,9 @@ export const AudioPlayer: React.FC = () => {
             onChange={handleSeekChange}
             style={{
               width: '100%',
-              height: '8px',
-              background: `linear-gradient(to right, #ffd700 ${progressPercent}%, rgba(255,255,255,0.15) ${progressPercent}%)`,
-              borderRadius: '9999px',
+              height: '6px',
+              background: `linear-gradient(to right, #00ff66 ${progressPercent}%, rgba(255,255,255,0.1) ${progressPercent}%)`,
+              borderRadius: '2px',
               position: 'relative',
               zIndex: 2,
             }}
@@ -134,8 +131,8 @@ export const AudioPlayer: React.FC = () => {
           style={{
             display: 'flex',
             justifyContent: 'space-between',
-            fontSize: '0.8rem',
-            color: '#94a3b8',
+            fontSize: '0.75rem',
+            color: '#5c7866',
             fontFamily: 'monospace',
           }}
         >
@@ -144,43 +141,30 @@ export const AudioPlayer: React.FC = () => {
         </div>
       </div>
 
-      {/* Bottom Controls: Play/Pause, Volume */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '14px' }}>
-        {/* Play/Pause Button */}
+      {/* Controls */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
         <button
           onClick={() => togglePlay(BIRTHDAY_CONFIG.birthdaySongUrl)}
-          className="btn-primary-glow"
-          style={{
-            padding: '10px 22px',
-            fontSize: '0.95rem',
-            borderRadius: '9999px',
-          }}
+          className="btn-cyber-primary"
+          style={{ padding: '8px 20px', fontSize: '0.85rem' }}
         >
           {isPlaying ? (
             <>
-              <Pause size={18} fill="#120d02" />
-              <span>PAUSE SONG</span>
+              <Pause size={16} fill="#05070a" />
+              <span>[ PAUSE AUDIO ]</span>
             </>
           ) : (
             <>
-              <Play size={18} fill="#120d02" />
-              <span>PLAY SONG</span>
+              <Play size={16} fill="#05070a" />
+              <span>[ PLAY ANTHEM ]</span>
             </>
           )}
         </button>
 
-        {/* Volume Slider & Mute */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <button
             onClick={toggleMute}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              cursor: 'pointer',
-              color: isMuted ? '#ef4444' : '#ffd700',
-              display: 'flex',
-              alignItems: 'center',
-            }}
+            style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: isMuted ? '#ff3344' : '#00ff66' }}
             title={isMuted ? 'Unmute' : 'Mute'}
           >
             {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
@@ -198,21 +182,11 @@ export const AudioPlayer: React.FC = () => {
         </div>
       </div>
 
-      {/* Synth / Track mode hint */}
       {isUsingSynth && (
-        <div
-          style={{
-            marginTop: '14px',
-            fontSize: '0.75rem',
-            color: '#64748b',
-            textAlign: 'center',
-            fontStyle: 'italic',
-          }}
-        >
-          Playing melodic music-box chimes. (Replace with custom MP3 in <code>public/audio/</code> anytime!)
+        <div style={{ marginTop: '12px', fontSize: '0.72rem', color: '#5c7866', textAlign: 'center' }}>
+          Synthesized cyber audio engine active // Replace with custom MP3 in <code>public/audio/</code> anytime
         </div>
       )}
     </div>
   );
 };
-

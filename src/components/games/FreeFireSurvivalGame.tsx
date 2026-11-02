@@ -565,3 +565,4 @@ export const FreeFireSurvivalGame: React.FC<FreeFireSurvivalGameProps> = ({ onCo
     </div>
   );
 };
+

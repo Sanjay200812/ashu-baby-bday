@@ -491,3 +491,4 @@ export const CatchTheFoodGame: React.FC<CatchTheFoodGameProps> = ({ onComplete, 
     </div>
   );
 };
+

@@ -1,6 +1,6 @@
 export type ScreenType =
-  | 'LOCK'
-  | 'WELCOME'
+  | 'BREACH'
+  | 'AUTH'
   | 'GAME_FLAP'
   | 'ARCADE'
   | 'QUIZ_GAMING'
@@ -17,10 +17,11 @@ export type MiniGameId =
   | 'sleep';
 
 export interface GameProgress {
-  // Lock state
+  // Breach & Auth
+  isBreached: boolean;
   isUnlocked: boolean;
 
-  // Mini games
+  // Games
   flapCompleted: boolean;
   flapBestScore: number;
 
@@ -39,7 +40,7 @@ export interface GameProgress {
   sleepCompleted: boolean;
   sleepBestScore: number;
 
-  // Quizzes & Experience
+  // Quizzes
   gamingQuizCompleted: boolean;
   gamingQuizScore: number;
 
@@ -48,4 +49,7 @@ export interface GameProgress {
 
   movieQuizCompleted: boolean;
   movieQuizScore: number;
+
+  // Secret Data Fragments (5 fragments scattered across games and arcade)
+  fragmentsCollected: number[]; // e.g. [1, 2, 3, 4, 5]
 }

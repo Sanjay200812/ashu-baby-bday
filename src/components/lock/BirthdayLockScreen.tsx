@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import gsap from 'gsap';
-import { Lock, Unlock, Sparkles, KeyRound, AlertCircle, Calendar, ShieldCheck } from 'lucide-react';
+import { Lock, Unlock, ShieldCheck, AlertCircle, Calendar, Terminal } from 'lucide-react';
 import { BIRTHDAY_CONFIG } from '../../config/birthdayConfig';
 import { soundSystem } from '../../utils/audioSystem';
 
@@ -12,18 +12,17 @@ export const BirthdayLockScreen: React.FC<BirthdayLockScreenProps> = ({ onUnlock
   const [pin, setPin] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [isShaking, setIsShaking] = useState<boolean>(false);
+  const [isAccessGranted, setIsAccessGranted] = useState<boolean>(false);
   const [now, setNow] = useState<Date>(new Date());
 
   const containerRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
 
-  // Update clock every second for dynamic countdown
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
-  // Calculate dynamic age from DOB (Nov 3, 2005)
   const calculateAge = () => {
     const dob = new Date(BIRTHDAY_CONFIG.dob);
     let age = now.getFullYear() - dob.getFullYear();
@@ -34,12 +33,10 @@ export const BirthdayLockScreen: React.FC<BirthdayLockScreenProps> = ({ onUnlock
     return age;
   };
 
-  // Calculate live countdown to next November 3
   const getCountdown = () => {
     const dob = new Date(BIRTHDAY_CONFIG.dob);
     let target = new Date(now.getFullYear(), dob.getMonth(), dob.getDate(), 0, 0, 0);
 
-    // If birthday has already passed this year, countdown to next year
     if (now.getTime() > target.getTime()) {
       target = new Date(now.getFullYear() + 1, dob.getMonth(), dob.getDate(), 0, 0, 0);
     }
@@ -56,7 +53,6 @@ export const BirthdayLockScreen: React.FC<BirthdayLockScreenProps> = ({ onUnlock
   const age = calculateAge();
   const { days, hours, minutes, seconds } = getCountdown();
 
-  // Handle number click on virtual keypad
   const handleNumClick = (digit: string) => {
     soundSystem.playClick();
     setErrorMessage('');
@@ -77,33 +73,32 @@ export const BirthdayLockScreen: React.FC<BirthdayLockScreenProps> = ({ onUnlock
     setPin('');
   };
 
-  // Handle Unlock check
   const handleUnlock = () => {
     soundSystem.playClick();
     if (pin === BIRTHDAY_CONFIG.lockPassword) {
-      // Correct!
       soundSystem.playVictory();
       setErrorMessage('');
+      setIsAccessGranted(true);
 
-      gsap.to(containerRef.current, {
-        opacity: 0,
-        scale: 1.05,
-        filter: 'blur(10px)',
-        duration: 0.7,
-        ease: 'power2.inOut',
-        onComplete: onUnlock,
-      });
+      setTimeout(() => {
+        gsap.to(containerRef.current, {
+          opacity: 0,
+          scale: 1.05,
+          filter: 'blur(10px)',
+          duration: 0.6,
+          ease: 'power2.inOut',
+          onComplete: onUnlock,
+        });
+      }, 1200);
     } else {
-      // Incorrect code
       soundSystem.playHit();
-      setErrorMessage('Incorrect passcode! Enter your date of birth (DDMMYYYY)');
+      setErrorMessage('ERR_AUTH_FAILED: PASSCODE MISMATCH. ENTER DDMMYYYY.');
       setIsShaking(true);
       setTimeout(() => setIsShaking(false), 500);
       setPin('');
     }
   };
 
-  // Listen for physical keyboard input
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key >= '0' && e.key <= '9') {
@@ -136,264 +131,214 @@ export const BirthdayLockScreen: React.FC<BirthdayLockScreenProps> = ({ onUnlock
         justifyContent: 'center',
         padding: '24px 16px',
         zIndex: 10,
+        fontFamily: 'var(--font-mono)',
       }}
     >
       <div
         ref={cardRef}
-        className={`glass-panel glass-panel-glow ${isShaking ? 'shake-animation' : ''}`}
+        className="terminal-panel"
         style={{
           width: '100%',
-          maxWidth: '460px',
-          padding: '36px 28px',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          textAlign: 'center',
-          border: '1px solid rgba(255, 215, 0, 0.4)',
-          boxShadow: '0 24px 60px rgba(0, 0, 0, 0.8), 0 0 50px rgba(220, 38, 38, 0.2)',
-          borderRadius: '24px',
+          maxWidth: '500px',
+          overflow: 'hidden',
+          border: isAccessGranted
+            ? '1px solid #00ff66'
+            : isShaking
+            ? '1px solid #ff3344'
+            : '1px solid rgba(0, 255, 102, 0.4)',
         }}
       >
-        {/* Lock Icon Badge */}
-        <div
-          style={{
-            width: '68px',
-            height: '68px',
-            borderRadius: '50%',
-            background: 'linear-gradient(135deg, rgba(220, 38, 38, 0.25) 0%, rgba(255, 215, 0, 0.2) 100%)',
-            border: '2px solid rgba(255, 215, 0, 0.6)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginBottom: '16px',
-            boxShadow: '0 0 25px rgba(255, 215, 0, 0.35)',
-          }}
-        >
-          <Lock size={32} color="#ffd700" />
+        {/* Terminal Header */}
+        <div className="terminal-header-bar">
+          <div className="terminal-dots">
+            <div className="terminal-dot dot-red" />
+            <div className="terminal-dot dot-yellow" />
+            <div className="terminal-dot dot-green" />
+          </div>
+          <div>SECURE_AUTH // SOUTH_DEV_FIREWALL</div>
+          <div style={{ color: '#00e5ff' }}>PORT:2005</div>
         </div>
 
-        <h1
-          className="gold-text-shimmer"
-          style={{
-            fontFamily: 'Cinzel, serif',
-            fontSize: '1.9rem',
-            fontWeight: 800,
-            marginBottom: '6px',
-          }}
-        >
-          Birthday Vault
-        </h1>
-
-        <p style={{ color: '#94a3b8', fontSize: '0.88rem', marginBottom: '22px' }}>
-          Restricted access for Aakash & Sanjay's birthday VIP
-        </p>
-
-        {/* Live Dynamic Birthday Counter & Age */}
-        <div
-          style={{
-            width: '100%',
-            background: 'rgba(15, 17, 30, 0.85)',
-            border: '1px solid rgba(255, 215, 0, 0.25)',
-            borderRadius: '16px',
-            padding: '16px 12px',
-            marginBottom: '24px',
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '6px',
-              color: '#ffd700',
-              fontSize: '0.78rem',
-              fontWeight: 700,
-              letterSpacing: '0.08em',
-              textTransform: 'uppercase',
-              marginBottom: '10px',
-            }}
-          >
-            <Calendar size={14} />
-            <span>Born: November 3, 2005 • Age: {age} Years</span>
+        <div style={{ padding: '32px 24px', textAlign: 'center' }}>
+          {/* Target Identity Terminal Header */}
+          <div style={{ marginBottom: '20px', textAlign: 'left' }}>
+            <div style={{ fontSize: '0.85rem', color: '#00ff66', fontWeight: 800, marginBottom: '4px' }}>
+              &gt; IDENTITY VERIFICATION REQUIRED
+            </div>
+            <div style={{ fontSize: '0.85rem', color: '#00e5ff', fontWeight: 700, marginBottom: '2px' }}>
+              &gt; USER: {BIRTHDAY_CONFIG.personName.toUpperCase()}
+            </div>
+            <div style={{ fontSize: '0.85rem', color: '#ffd700', fontWeight: 700 }}>
+              &gt; CODENAME: {BIRTHDAY_CONFIG.codename}
+            </div>
           </div>
 
-          {/* Countdown timer numbers */}
+          {/* Dynamic Birthday Counter Matrix */}
           <div
             style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(4, 1fr)',
-              gap: '8px',
+              background: 'rgba(0, 255, 102, 0.05)',
+              border: '1px solid rgba(0, 255, 102, 0.25)',
+              borderRadius: '6px',
+              padding: '14px 10px',
+              marginBottom: '24px',
+              textAlign: 'center',
             }}
           >
-            {[
-              { label: 'DAYS', val: days },
-              { label: 'HOURS', val: hours },
-              { label: 'MINUTES', val: minutes },
-              { label: 'SECONDS', val: seconds },
-            ].map((unit, idx) => (
-              <div
-                key={idx}
-                style={{
-                  background: 'rgba(255, 255, 255, 0.05)',
-                  borderRadius: '10px',
-                  padding: '8px 4px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  border: '1px solid rgba(255, 255, 255, 0.08)',
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: '1.45rem',
-                    fontWeight: 900,
-                    fontFamily: 'monospace',
-                    color: '#fff',
-                    lineHeight: 1,
-                  }}
-                >
-                  {unit.val < 10 ? `0${unit.val}` : unit.val}
-                </div>
-                <div style={{ fontSize: '0.62rem', color: '#94a3b8', fontWeight: 700, marginTop: '4px' }}>
-                  {unit.label}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* PIN Input Slots */}
-        <div style={{ marginBottom: '18px', width: '100%' }}>
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'center',
-              gap: '8px',
-              marginBottom: '8px',
-            }}
-          >
-            {[0, 1, 2, 3, 4, 5, 6, 7].map((idx) => {
-              const char = pin[idx];
-              return (
-                <div
-                  key={idx}
-                  style={{
-                    width: '38px',
-                    height: '46px',
-                    borderRadius: '8px',
-                    background: char ? 'rgba(255, 215, 0, 0.15)' : 'rgba(255, 255, 255, 0.05)',
-                    border: char ? '2px solid #ffd700' : '1px solid rgba(255, 255, 255, 0.15)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '1.25rem',
-                    fontWeight: 800,
-                    color: '#ffd700',
-                    boxShadow: char ? '0 0 10px rgba(255, 215, 0, 0.4)' : 'none',
-                    transition: 'all 0.15s ease',
-                  }}
-                >
-                  {char || '•'}
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Error Message Display */}
-          {errorMessage ? (
             <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '6px',
-                color: '#ef4444',
-                fontSize: '0.8rem',
-                marginTop: '8px',
-              }}
-            >
-              <AlertCircle size={14} />
-              <span>{errorMessage}</span>
-            </div>
-          ) : (
-            <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '6px' }}>
-              Hint: Enter your 8-digit birth date in <strong>DDMMYYYY</strong> format
-            </div>
-          )}
-        </div>
-
-        {/* Numeric On-Screen Keypad */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
-            gap: '10px',
-            width: '100%',
-            maxWidth: '280px',
-            marginBottom: '20px',
-          }}
-        >
-          {['1', '2', '3', '4', '5', '6', '7', '8', '9', 'CLR', '0', '⌫'].map((item) => (
-            <button
-              key={item}
-              onClick={() => {
-                if (item === 'CLR') handleClear();
-                else if (item === '⌫') handleBackspace();
-                else handleNumClick(item);
-              }}
-              style={{
-                height: '46px',
-                borderRadius: '12px',
-                background: 'rgba(255, 255, 255, 0.07)',
-                border: '1px solid rgba(255, 255, 255, 0.12)',
-                color: item === 'CLR' ? '#ef4444' : item === '⌫' ? '#ffd700' : '#fff',
-                fontSize: '1.15rem',
+                color: '#00ff66',
+                fontSize: '0.78rem',
                 fontWeight: 700,
-                cursor: 'pointer',
-                transition: 'all 0.15s ease',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'rgba(255, 215, 0, 0.2)';
-                e.currentTarget.style.borderColor = '#ffd700';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.07)';
-                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.12)';
+                letterSpacing: '0.08em',
+                marginBottom: '10px',
               }}
             >
-              {item}
-            </button>
-          ))}
+              <Calendar size={14} />
+              <span>DOB: 03-NOV-2005 • AGE: {age} CYCLES</span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
+              {[
+                { label: 'DAYS', val: days },
+                { label: 'HOURS', val: hours },
+                { label: 'MINUTES', val: minutes },
+                { label: 'SECONDS', val: seconds },
+              ].map((unit, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    background: 'rgba(0, 0, 0, 0.5)',
+                    border: '1px solid rgba(0, 255, 102, 0.2)',
+                    borderRadius: '4px',
+                    padding: '8px 4px',
+                  }}
+                >
+                  <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#00ff66', lineHeight: 1 }}>
+                    {unit.val < 10 ? `0${unit.val}` : unit.val}
+                  </div>
+                  <div style={{ fontSize: '0.62rem', color: '#5c7866', fontWeight: 700, marginTop: '4px' }}>
+                    {unit.label}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* PIN Slots */}
+          <div style={{ marginBottom: '18px' }}>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginBottom: '8px' }}>
+              {[0, 1, 2, 3, 4, 5, 6, 7].map((idx) => {
+                const char = pin[idx];
+                return (
+                  <div
+                    key={idx}
+                    style={{
+                      width: '38px',
+                      height: '46px',
+                      borderRadius: '4px',
+                      background: char ? 'rgba(0, 255, 102, 0.15)' : 'rgba(0, 0, 0, 0.4)',
+                      border: char ? '1px solid #00ff66' : '1px solid rgba(255, 255, 255, 0.15)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '1.25rem',
+                      fontWeight: 800,
+                      color: '#00ff66',
+                      boxShadow: char ? '0 0 10px rgba(0, 255, 102, 0.4)' : 'none',
+                    }}
+                  >
+                    {char || '_'}
+                  </div>
+                );
+              })}
+            </div>
+
+            {errorMessage ? (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  color: '#ff3344',
+                  fontSize: '0.8rem',
+                  marginTop: '8px',
+                }}
+              >
+                <AlertCircle size={14} />
+                <span>{errorMessage}</span>
+              </div>
+            ) : isAccessGranted ? (
+              <div style={{ color: '#00ff66', fontSize: '0.9rem', fontWeight: 800, marginTop: '8px' }}>
+                ACCESS GRANTED // WELCOME BACK, SOUTH DEV
+              </div>
+            ) : (
+              <div style={{ fontSize: '0.74rem', color: '#5c7866', marginTop: '6px' }}>
+                Enter verification key: 8-digit birth date (DDMMYYYY)
+              </div>
+            )}
+          </div>
+
+          {/* Keypad */}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, 1fr)',
+              gap: '10px',
+              width: '100%',
+              maxWidth: '280px',
+              margin: '0 auto 20px',
+            }}
+          >
+            {['1', '2', '3', '4', '5', '6', '7', '8', '9', 'CLR', '0', '⌫'].map((item) => (
+              <button
+                key={item}
+                onClick={() => {
+                  if (item === 'CLR') handleClear();
+                  else if (item === '⌫') handleBackspace();
+                  else handleNumClick(item);
+                }}
+                style={{
+                  height: '44px',
+                  borderRadius: '4px',
+                  background: 'rgba(0, 255, 102, 0.06)',
+                  border: '1px solid rgba(0, 255, 102, 0.25)',
+                  color: item === 'CLR' ? '#ff3344' : item === '⌫' ? '#00e5ff' : '#00ff66',
+                  fontSize: '1.1rem',
+                  fontWeight: 700,
+                  fontFamily: 'var(--font-mono)',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(0, 255, 102, 0.25)';
+                  e.currentTarget.style.borderColor = '#00ff66';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'rgba(0, 255, 102, 0.06)';
+                  e.currentTarget.style.borderColor = 'rgba(0, 255, 102, 0.25)';
+                }}
+              >
+                {item}
+              </button>
+            ))}
+          </div>
+
+          {/* Unlock Button */}
+          <button
+            onClick={handleUnlock}
+            className="btn-cyber-primary pulse-cyber"
+            style={{ width: '100%', padding: '14px', fontSize: '1.05rem' }}
+          >
+            <Unlock size={18} />
+            <span>[ AUTHENTICATE_ ]</span>
+          </button>
         </div>
-
-        {/* Unlock Button */}
-        <button
-          onClick={handleUnlock}
-          className="btn-primary-glow pulse-glow"
-          style={{
-            width: '100%',
-            padding: '14px',
-            fontSize: '1.05rem',
-          }}
-        >
-          <Unlock size={18} />
-          <span>UNLOCK SURPRISE</span>
-        </button>
       </div>
-
-      <style>{`
-        @keyframes shake {
-          0%, 100% { transform: translateX(0); }
-          20%, 60% { transform: translateX(-10px); }
-          40%, 80% { transform: translateX(10px); }
-        }
-        .shake-animation {
-          animation: shake 0.4s ease-in-out;
-        }
-      `}</style>
     </div>
   );
 };

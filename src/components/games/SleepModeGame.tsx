@@ -486,3 +486,4 @@ export const SleepModeGame: React.FC<SleepModeGameProps> = ({ onComplete, onBack
     </div>
   );
 };
+

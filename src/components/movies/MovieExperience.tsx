@@ -298,3 +298,4 @@ export const MovieExperience: React.FC<MovieExperienceProps> = ({ onComplete, on
     </div>
   );
 };
+

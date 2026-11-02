@@ -1,5 +1,19 @@
-import React from 'react';
-import { Sparkles, Trophy, ChevronRight, Play, CheckCircle2, Gift, Gamepad2, Film, Laugh } from 'lucide-react';
+import React, { useState } from 'react';
+import {
+  Terminal,
+  Trophy,
+  ChevronRight,
+  Play,
+  CheckCircle2,
+  Lock,
+  Cpu,
+  Activity,
+  Zap,
+  Code,
+  Film,
+  Laugh,
+  Flame,
+} from 'lucide-react';
 import { GameProgress, MiniGameId } from '../../types/game';
 import { BIRTHDAY_CONFIG } from '../../config/birthdayConfig';
 import { soundSystem } from '../../utils/audioSystem';
@@ -11,14 +25,16 @@ interface ArcadeHubProps {
   onOpenPersonalQuiz: () => void;
   onOpenMovieExperience: () => void;
   onOpenSurprise: () => void;
+  onOpenCli: () => void;
+  onOpenDashboard: () => void;
 }
 
-interface ArcadeGameMeta {
+interface CyberGameMeta {
   id: MiniGameId;
   title: string;
+  codename: string;
   subtitle: string;
   icon: string;
-  category: string;
   isCompleted: boolean;
   bestLabel?: string;
   accentColor: string;
@@ -31,66 +47,71 @@ export const ArcadeHub: React.FC<ArcadeHubProps> = ({
   onOpenPersonalQuiz,
   onOpenMovieExperience,
   onOpenSurprise,
+  onOpenCli,
+  onOpenDashboard,
 }) => {
-  const games: ArcadeGameMeta[] = [
+  const [logoClicks, setLogoClicks] = useState<number>(0);
+  const [easterEggToast, setEasterEggToast] = useState<string>('');
+
+  const games: CyberGameMeta[] = [
     {
       id: 'flap',
-      title: 'Birthday Flap',
-      subtitle: "Fly through birthday candle towers with his custom hero avatar!",
+      title: 'Birthday Flap Adventure',
+      codename: 'MODULE // FLAP_PROTOCOL',
+      subtitle: "Fly Ashu's avatar through cyber candle towers & digital barriers",
       icon: '🪂',
-      category: 'Arcade Classic',
       isCompleted: progress.flapCompleted,
-      bestLabel: progress.flapBestScore > 0 ? `Best: ${progress.flapBestScore} pts` : undefined,
-      accentColor: '#ffd700',
+      bestLabel: progress.flapBestScore > 0 ? `RECORD: ${progress.flapBestScore}` : undefined,
+      accentColor: '#00ff66',
     },
     {
       id: 'gta',
-      title: 'GTA Chaos Run',
-      subtitle: 'Dodge sports cars, jump obstacles, slide under beams & collect cash',
+      title: 'GTA: Digital Escape',
+      codename: 'MODULE // GTA_ESCAPE',
+      subtitle: 'Dodge police vehicles, jump barriers, slide under signs & snatch cash',
       icon: '🚗',
-      category: 'Endless Runner',
       isCompleted: progress.gtaCompleted,
-      bestLabel: progress.gtaBestScore > 0 ? `Best: ${progress.gtaBestScore} pts` : undefined,
-      accentColor: '#dc2626',
+      bestLabel: progress.gtaBestScore > 0 ? `SCORE: ${progress.gtaBestScore}` : undefined,
+      accentColor: '#ff3344',
     },
     {
       id: 'spiderman',
-      title: 'Spider Web Swing',
-      subtitle: 'Hold to latch webs & swing across neon skyscrapers to the finish line',
+      title: 'Spider-Man: Web Protocol',
+      codename: 'MODULE // WEB_SWING',
+      subtitle: 'Latch web lines, swing with pendulum physics & reach the extraction zone',
       icon: '🕷️',
-      category: '2D Platformer',
       isCompleted: progress.spidermanCompleted,
-      bestLabel: progress.spidermanBestScore > 0 ? `Best: ${progress.spidermanBestScore} pts` : undefined,
+      bestLabel: progress.spidermanBestScore > 0 ? `SCORE: ${progress.spidermanBestScore}` : undefined,
       accentColor: '#00e5ff',
     },
     {
       id: 'freefire',
-      title: 'Battle Royale Survival',
-      subtitle: 'Stay in the shrinking blue safe zone, dodge airstrikes & grab airdrops',
+      title: 'Free Fire: Survival Protocol',
+      codename: 'MODULE // BATTLE_SURVIVAL',
+      subtitle: 'Hold down the arena, dodge airstrike zones & achieve BOOYAH victory',
       icon: '🪖',
-      category: 'Combat Survival',
       isCompleted: progress.freefireCompleted,
-      bestLabel: progress.freefireBestScore > 0 ? `Best: ${progress.freefireBestScore} pts` : undefined,
-      accentColor: '#ea580c',
+      bestLabel: progress.freefireBestScore > 0 ? `SCORE: ${progress.freefireBestScore}` : undefined,
+      accentColor: '#ffb703',
     },
     {
       id: 'food',
-      title: 'Catch the Food',
-      subtitle: 'Catch pizzas, burgers & biryani with funny food-eating photo reactions',
+      title: 'Food.exe',
+      codename: 'MODULE // FOOD_FEAST',
+      subtitle: "Catch falling pizzas & biryani with Ashu's funny food-eating photos",
       icon: '🍕',
-      category: 'Foodie Fun',
       isCompleted: progress.foodCompleted,
-      bestLabel: progress.foodBestScore > 0 ? `Best: ${progress.foodBestScore} pts` : undefined,
+      bestLabel: progress.foodBestScore > 0 ? `SCORE: ${progress.foodBestScore}` : undefined,
       accentColor: '#f59e0b',
     },
     {
       id: 'sleep',
-      title: 'Sleep Mode',
-      subtitle: 'Fight the drowsiness meter and stay awake with sleeping photo reactions',
+      title: 'Sleep.exe',
+      codename: 'MODULE // SLEEP_DEFENSE',
+      subtitle: "Fight the drowsiness meter with Ashu's funny sleeping photos",
       icon: '😴',
-      category: 'Reaction Test',
       isCompleted: progress.sleepCompleted,
-      bestLabel: progress.sleepBestScore > 0 ? `Best: ${progress.sleepBestScore} pts` : undefined,
+      bestLabel: progress.sleepBestScore > 0 ? `SCORE: ${progress.sleepBestScore}` : undefined,
       accentColor: '#818cf8',
     },
   ];
@@ -101,6 +122,20 @@ export const ArcadeHub: React.FC<ArcadeHubProps> = ({
   const handleCardClick = (id: MiniGameId) => {
     soundSystem.playClick();
     onSelectGame(id);
+  };
+
+  // Easter egg: Clicking South Dev header 5 times triggers a secret glitch toast!
+  const handleLogoClick = () => {
+    const next = logoClicks + 1;
+    setLogoClicks(next);
+    soundSystem.playClick();
+
+    if (next === 5) {
+      soundSystem.playVictory();
+      setEasterEggToast('🔓 EASTER EGG UNLOCKED: "SOUTH DEV IS OVERCLOCKED TO 999GHz!"');
+      setTimeout(() => setEasterEggToast(''), 4500);
+      setLogoClicks(0);
+    }
   };
 
   return (
@@ -116,55 +151,85 @@ export const ArcadeHub: React.FC<ArcadeHubProps> = ({
         flexDirection: 'column',
         alignItems: 'center',
         zIndex: 10,
+        fontFamily: 'var(--font-mono)',
       }}
     >
-      {/* Header */}
-      <div style={{ textAlign: 'center', marginBottom: '28px' }}>
+      {/* Toast Notification */}
+      {easterEggToast && (
         <div
+          style={{
+            position: 'fixed',
+            top: 24,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: 'rgba(0, 255, 102, 0.2)',
+            border: '1px solid #00ff66',
+            color: '#00ff66',
+            padding: '10px 20px',
+            borderRadius: '4px',
+            fontSize: '0.85rem',
+            fontWeight: 800,
+            zIndex: 999,
+            boxShadow: '0 0 25px rgba(0, 255, 102, 0.4)',
+          }}
+        >
+          {easterEggToast}
+        </div>
+      )}
+
+      {/* Header */}
+      <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+        <div
+          onClick={handleLogoClick}
           style={{
             display: 'inline-flex',
             alignItems: 'center',
             gap: '8px',
-            background: 'rgba(220, 38, 38, 0.18)',
-            border: '1px solid rgba(220, 38, 38, 0.45)',
-            borderRadius: '9999px',
-            padding: '6px 18px',
-            marginBottom: '16px',
+            background: 'rgba(0, 255, 102, 0.08)',
+            border: '1px solid rgba(0, 255, 102, 0.35)',
+            borderRadius: '4px',
+            padding: '6px 16px',
+            marginBottom: '14px',
+            cursor: 'pointer',
           }}
+          title="Click 5 times for a secret easter egg!"
         >
-          <Sparkles size={16} color="#ffd700" />
-          <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#ffd700', letterSpacing: '0.08em' }}>
-            AAKASH & SANJAY'S BIRTHDAY ARCADE
+          <Cpu size={15} color="#00ff66" />
+          <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#00ff66', letterSpacing: '0.08em' }}>
+            SOUTH_DEV // CYBER_ARCADE_INTERFACE v20.05
           </span>
         </div>
 
         <h1
-          className="gold-text-shimmer neon-title"
+          className="text-neon-green glitch-text"
+          data-text="SOUTH DEV CYBER ARCADE"
           style={{
-            fontSize: 'clamp(2.1rem, 5vw, 3.4rem)',
-            marginBottom: '10px',
+            fontSize: 'clamp(2rem, 5vw, 3.2rem)',
+            fontWeight: 900,
+            letterSpacing: '0.02em',
+            marginBottom: '8px',
           }}
         >
-          The Birthday Arcade
+          SOUTH DEV CYBER ARCADE
         </h1>
 
-        <p style={{ color: '#cbd5e1', fontSize: '1rem', maxWidth: '580px', margin: '0 auto' }}>
-          Play custom mini-games, test gaming trivia, and unlock the final birthday surprise for {BIRTHDAY_CONFIG.personName}!
+        <p style={{ color: '#5c7866', fontSize: '0.92rem', maxWidth: '580px', margin: '0 auto' }}>
+          Breached & Injected by Aakash & Sanjay // Clear security modules or trigger final override
         </p>
       </div>
 
-      {/* Progress & Quick Action Bar */}
+      {/* Action Control Bar (CLI, Status Dashboard, Final Override) */}
       <div
-        className="glass-panel"
+        className="terminal-panel"
         style={{
           width: '100%',
-          maxWidth: '860px',
-          padding: '20px 24px',
+          maxWidth: '880px',
+          padding: '16px 20px',
           marginBottom: '28px',
           display: 'flex',
           flexDirection: 'column',
-          gap: '16px',
-          border: '1px solid rgba(255, 215, 0, 0.35)',
+          gap: '14px',
+          border: '1px solid rgba(0, 255, 102, 0.35)',
         }}
       >
         <div
@@ -173,214 +238,254 @@ export const ArcadeHub: React.FC<ArcadeHubProps> = ({
             alignItems: 'center',
             justifyContent: 'space-between',
             flexWrap: 'wrap',
-            gap: '14px',
+            gap: '12px',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {/* Progress Indicator */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div
               style={{
-                width: '44px',
-                height: '44px',
-                borderRadius: '50%',
-                background: 'rgba(255, 215, 0, 0.15)',
+                width: '38px',
+                height: '38px',
+                borderRadius: '4px',
+                background: 'rgba(0, 255, 102, 0.1)',
+                border: '1px solid #00ff66',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                color: '#00ff66',
               }}
             >
-              <Trophy size={22} color="#ffd700" />
+              <Trophy size={18} />
             </div>
             <div>
-              <div style={{ fontSize: '1rem', fontWeight: 800, color: '#fff' }}>
-                Arcade Progress: {completedCount} / {games.length} Games Mastered
+              <div style={{ fontSize: '0.92rem', fontWeight: 800, color: '#00ff66' }}>
+                SECURITY CLEARANCE: {completedCount} / {games.length} MODULES
               </div>
-              <div style={{ fontSize: '0.82rem', color: '#94a3b8' }}>
-                Play in any order, or jump straight to the final birthday card!
+              <div style={{ fontSize: '0.74rem', color: '#5c7866' }}>
+                Data fragments collected: {progress.fragmentsCollected.length} / 5
               </div>
             </div>
           </div>
 
-          <button
-            onClick={() => {
-              soundSystem.playClick();
-              onOpenSurprise();
-            }}
-            className="btn-primary-glow pulse-glow"
-            style={{
-              padding: '12px 24px',
-              fontSize: '0.95rem',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            <Gift size={18} fill="#120d02" />
-            <span>FINAL BIRTHDAY SURPRISE</span>
-            <ChevronRight size={16} />
-          </button>
+          {/* Quick Buttons */}
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            <button
+              onClick={() => {
+                soundSystem.playClick();
+                onOpenDashboard();
+              }}
+              className="btn-cyber-secondary"
+              style={{ padding: '8px 14px', fontSize: '0.8rem' }}
+            >
+              <Activity size={14} color="#00e5ff" />
+              <span>[ TELEMETRY ]</span>
+            </button>
+
+            <button
+              onClick={() => {
+                soundSystem.playClick();
+                onOpenCli();
+              }}
+              className="btn-cyber-secondary"
+              style={{ padding: '8px 14px', fontSize: '0.8rem' }}
+            >
+              <Terminal size={14} color="#00ff66" />
+              <span>[ CLI TERMINAL ]</span>
+            </button>
+
+            <button
+              onClick={() => {
+                soundSystem.playClick();
+                onOpenSurprise();
+              }}
+              className="btn-cyber-primary pulse-cyber"
+              style={{ padding: '8px 18px', fontSize: '0.84rem' }}
+            >
+              <Zap size={14} fill="#00ff66" />
+              <span>[ FINAL SURPRISE ]</span>
+            </button>
+          </div>
         </div>
 
         {/* Progress Bar */}
         <div
           style={{
             width: '100%',
-            height: '8px',
-            background: 'rgba(255, 255, 255, 0.1)',
-            borderRadius: '9999px',
+            height: '6px',
+            background: 'rgba(255, 255, 255, 0.08)',
+            borderRadius: '2px',
             overflow: 'hidden',
           }}
         >
           <div
             style={{
               height: '100%',
-              width: `${Math.max(12, progressPercent)}%`,
-              background: 'linear-gradient(90deg, #ffd700 0%, #dc2626 50%, #e040fb 100%)',
-              borderRadius: '9999px',
-              transition: 'width 0.5s ease',
+              width: `${Math.max(8, progressPercent)}%`,
+              background: 'linear-gradient(90deg, #00ff66 0%, #00e5ff 100%)',
+              boxShadow: '0 0 10px #00ff66',
+              transition: 'width 0.4s ease',
             }}
           />
         </div>
       </div>
 
-      {/* Special Challenge Banners (Quizzes & Movie Challenge) */}
+      {/* Quizzes & Interrogation Banners */}
       <div
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-          gap: '16px',
+          gap: '14px',
           width: '100%',
-          maxWidth: '860px',
+          maxWidth: '880px',
           marginBottom: '28px',
         }}
       >
-        {/* Gaming Quiz Card */}
+        {/* Gaming Knowledge Database */}
         <div
           onClick={() => {
             soundSystem.playClick();
             onOpenGamingQuiz();
           }}
-          className="glass-panel"
+          className="terminal-panel"
           style={{
-            padding: '18px 20px',
+            padding: '16px',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
-            gap: '14px',
-            border: '1px solid rgba(220, 38, 38, 0.4)',
-            background: 'linear-gradient(135deg, rgba(220, 38, 38, 0.15) 0%, rgba(20, 15, 30, 0.7) 100%)',
-            transition: 'transform 0.2s ease',
+            gap: '12px',
+            border: '1px solid rgba(0, 255, 102, 0.35)',
+            transition: 'all 0.2s ease',
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-3px)')}
-          onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = '#00ff66';
+            e.currentTarget.style.transform = 'translateY(-2px)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = 'rgba(0, 255, 102, 0.35)';
+            e.currentTarget.style.transform = 'translateY(0)';
+          }}
         >
           <div
             style={{
-              width: '46px',
-              height: '46px',
-              borderRadius: '12px',
-              background: 'rgba(220, 38, 38, 0.25)',
+              width: '42px',
+              height: '42px',
+              borderRadius: '4px',
+              background: 'rgba(0, 255, 102, 0.12)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: '#ef4444',
+              color: '#00ff66',
             }}
           >
-            <Gamepad2 size={24} />
+            <Code size={20} />
           </div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: '0.98rem', fontWeight: 800, color: '#fff' }}>Gaming Quiz</div>
-            <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>GTA, Spidey, Free Fire trivia</div>
+            <div style={{ fontSize: '0.88rem', fontWeight: 800, color: '#00ff66' }}>KNOWLEDGE DATABASE</div>
+            <div style={{ fontSize: '0.74rem', color: '#5c7866' }}>GTA, Spider-Man, Free Fire trivia</div>
           </div>
-          <ChevronRight size={18} color="#ef4444" />
+          <ChevronRight size={16} color="#00ff66" />
         </div>
 
-        {/* Funny & Personal Quiz Card */}
+        {/* Personal Data Interrogation */}
         <div
           onClick={() => {
             soundSystem.playClick();
             onOpenPersonalQuiz();
           }}
-          className="glass-panel"
+          className="terminal-panel"
           style={{
-            padding: '18px 20px',
+            padding: '16px',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
-            gap: '14px',
-            border: '1px solid rgba(224, 64, 251, 0.4)',
-            background: 'linear-gradient(135deg, rgba(224, 64, 251, 0.15) 0%, rgba(20, 15, 30, 0.7) 100%)',
-            transition: 'transform 0.2s ease',
+            gap: '12px',
+            border: '1px solid rgba(255, 51, 68, 0.35)',
+            transition: 'all 0.2s ease',
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-3px)')}
-          onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = '#ff3344';
+            e.currentTarget.style.transform = 'translateY(-2px)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = 'rgba(255, 51, 68, 0.35)';
+            e.currentTarget.style.transform = 'translateY(0)';
+          }}
         >
           <div
             style={{
-              width: '46px',
-              height: '46px',
-              borderRadius: '12px',
-              background: 'rgba(224, 64, 251, 0.25)',
+              width: '42px',
+              height: '42px',
+              borderRadius: '4px',
+              background: 'rgba(255, 51, 68, 0.12)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: '#e040fb',
+              color: '#ff3344',
             }}
           >
-            <Laugh size={24} />
+            <Laugh size={20} />
           </div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: '0.98rem', fontWeight: 800, color: '#fff' }}>Personal Roast Quiz</div>
-            <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Aakash & Sanjay's inside jokes</div>
+            <div style={{ fontSize: '0.88rem', fontWeight: 800, color: '#ff3344' }}>DATA INTERROGATION</div>
+            <div style={{ fontSize: '0.74rem', color: '#5c7866' }}>Aakash & Sanjay's inside roasts</div>
           </div>
-          <ChevronRight size={18} color="#e040fb" />
+          <ChevronRight size={16} color="#ff3344" />
         </div>
 
-        {/* Movie Lover Challenge Card */}
+        {/* Movie Knowledge Decryption */}
         <div
           onClick={() => {
             soundSystem.playClick();
             onOpenMovieExperience();
           }}
-          className="glass-panel"
+          className="terminal-panel"
           style={{
-            padding: '18px 20px',
+            padding: '16px',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
-            gap: '14px',
-            border: '1px solid rgba(255, 215, 0, 0.4)',
-            background: 'linear-gradient(135deg, rgba(255, 215, 0, 0.15) 0%, rgba(20, 15, 30, 0.7) 100%)',
-            transition: 'transform 0.2s ease',
+            gap: '12px',
+            border: '1px solid rgba(0, 229, 255, 0.35)',
+            transition: 'all 0.2s ease',
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-3px)')}
-          onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = '#00e5ff';
+            e.currentTarget.style.transform = 'translateY(-2px)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = 'rgba(0, 229, 255, 0.35)';
+            e.currentTarget.style.transform = 'translateY(0)';
+          }}
         >
           <div
             style={{
-              width: '46px',
-              height: '46px',
-              borderRadius: '12px',
-              background: 'rgba(255, 215, 0, 0.25)',
+              width: '42px',
+              height: '42px',
+              borderRadius: '4px',
+              background: 'rgba(0, 229, 255, 0.12)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: '#ffd700',
+              color: '#00e5ff',
             }}
           >
-            <Film size={24} />
+            <Film size={20} />
           </div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: '0.98rem', fontWeight: 800, color: '#fff' }}>Movie Lover Challenge</div>
-            <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Guess iconic films from clues</div>
+            <div style={{ fontSize: '0.88rem', fontWeight: 800, color: '#00e5ff' }}>MOVIE DECRYPTION</div>
+            <div style={{ fontSize: '0.74rem', color: '#5c7866' }}>Decipher films from emoji clues</div>
           </div>
-          <ChevronRight size={18} color="#ffd700" />
+          <ChevronRight size={16} color="#00e5ff" />
         </div>
       </div>
 
-      {/* Grid of Mini-Games */}
+      {/* Grid of 6 Cyber Games */}
       <div
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(270px, 1fr))',
-          gap: '20px',
+          gap: '18px',
           width: '100%',
           maxWidth: '920px',
         }}
@@ -389,54 +494,43 @@ export const ArcadeHub: React.FC<ArcadeHubProps> = ({
           <div
             key={game.id}
             onClick={() => handleCardClick(game.id)}
-            className="glass-panel"
+            className="terminal-panel"
             style={{
-              padding: '24px',
+              padding: '22px',
               cursor: 'pointer',
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
-              transition: 'all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+              transition: 'all 0.2s ease',
               border: game.isCompleted
-                ? '1px solid rgba(74, 222, 128, 0.45)'
-                : '1px solid rgba(255, 255, 255, 0.12)',
+                ? '1px solid #00ff66'
+                : '1px solid rgba(255, 255, 255, 0.14)',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-6px)';
+              e.currentTarget.style.transform = 'translateY(-4px)';
               e.currentTarget.style.borderColor = game.accentColor;
-              e.currentTarget.style.boxShadow = `0 16px 36px rgba(0,0,0,0.6), 0 0 25px ${game.accentColor}33`;
+              e.currentTarget.style.boxShadow = `0 0 25px ${game.accentColor}44`;
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translateY(0px)';
+              e.currentTarget.style.transform = 'translateY(0)';
               e.currentTarget.style.borderColor = game.isCompleted
-                ? 'rgba(74, 222, 128, 0.45)'
-                : 'rgba(255, 255, 255, 0.12)';
-              e.currentTarget.style.boxShadow = '0 12px 40px rgba(0, 0, 0, 0.5)';
+                ? '#00ff66'
+                : 'rgba(255, 255, 255, 0.14)';
+              e.currentTarget.style.boxShadow = 'none';
             }}
           >
             <div>
+              {/* Card Top: Codename & Status */}
               <div
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  marginBottom: '16px',
+                  marginBottom: '14px',
                 }}
               >
-                <div
-                  style={{
-                    width: '56px',
-                    height: '56px',
-                    borderRadius: '16px',
-                    background: `${game.accentColor}18`,
-                    border: `1px solid ${game.accentColor}44`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '1.9rem',
-                  }}
-                >
-                  {game.icon}
+                <div style={{ fontSize: '0.72rem', color: '#5c7866', fontWeight: 700 }}>
+                  {game.codename}
                 </div>
 
                 {game.isCompleted ? (
@@ -444,55 +538,53 @@ export const ArcadeHub: React.FC<ArcadeHubProps> = ({
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '5px',
-                      background: 'rgba(74, 222, 128, 0.15)',
-                      border: '1px solid #4ade80',
-                      borderRadius: '9999px',
-                      padding: '4px 10px',
-                      fontSize: '0.75rem',
-                      fontWeight: 700,
-                      color: '#4ade80',
+                      gap: '4px',
+                      color: '#00ff66',
+                      fontSize: '0.74rem',
+                      fontWeight: 800,
                     }}
                   >
                     <CheckCircle2 size={13} />
-                    <span>COMPLETED</span>
+                    <span>CLEARED</span>
                   </div>
                 ) : (
                   <div
                     style={{
-                      background: 'rgba(255, 255, 255, 0.08)',
-                      borderRadius: '9999px',
-                      padding: '4px 10px',
-                      fontSize: '0.75rem',
+                      color: '#5c7866',
+                      fontSize: '0.74rem',
                       fontWeight: 600,
-                      color: '#94a3b8',
                     }}
                   >
-                    {game.category}
+                    READY
                   </div>
                 )}
               </div>
 
-              <h3 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#fff', marginBottom: '8px' }}>
-                {game.title}
-              </h3>
+              {/* Title & Description */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                <span style={{ fontSize: '1.6rem' }}>{game.icon}</span>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#e2fce8' }}>
+                  {game.title}
+                </h3>
+              </div>
 
-              <p style={{ color: '#94a3b8', fontSize: '0.86rem', lineHeight: 1.5, marginBottom: '20px' }}>
+              <p style={{ color: '#5c7866', fontSize: '0.82rem', lineHeight: 1.5, marginBottom: '20px' }}>
                 {game.subtitle}
               </p>
             </div>
 
+            {/* Bottom: Record & Play Button */}
             <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                paddingTop: '16px',
+                paddingTop: '14px',
                 borderTop: '1px solid rgba(255, 255, 255, 0.08)',
               }}
             >
-              <div style={{ fontSize: '0.82rem', color: '#ffd700', fontWeight: 600 }}>
-                {game.bestLabel || 'Ready to play'}
+              <div style={{ fontSize: '0.78rem', color: '#00ff66', fontWeight: 700 }}>
+                {game.bestLabel || 'NO RECORD'}
               </div>
 
               <div
@@ -501,12 +593,12 @@ export const ArcadeHub: React.FC<ArcadeHubProps> = ({
                   alignItems: 'center',
                   gap: '4px',
                   color: game.accentColor,
-                  fontWeight: 700,
-                  fontSize: '0.85rem',
+                  fontWeight: 800,
+                  fontSize: '0.82rem',
                 }}
               >
-                <Play size={14} fill={game.accentColor} />
-                <span>Play</span>
+                <Play size={13} fill={game.accentColor} />
+                <span>EXECUTE_</span>
               </div>
             </div>
           </div>

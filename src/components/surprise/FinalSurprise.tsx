@@ -1,7 +1,18 @@
 import React, { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
 import confetti from 'canvas-confetti';
-import { Sparkles, RotateCcw, ArrowLeft, Flame, Wind, Heart } from 'lucide-react';
+import {
+  Sparkles,
+  RotateCcw,
+  ArrowLeft,
+  Flame,
+  Wind,
+  Terminal,
+  Share2,
+  Check,
+  Cpu,
+  Heart,
+} from 'lucide-react';
 import { BIRTHDAY_CONFIG } from '../../config/birthdayConfig';
 import { soundSystem } from '../../utils/audioSystem';
 import { AudioPlayer } from './AudioPlayer';
@@ -18,15 +29,16 @@ export const FinalSurprise: React.FC<FinalSurpriseProps> = ({ onReplayAll, onBac
   const letterRef = useRef<HTMLDivElement>(null);
 
   const [candlesLit, setCandlesLit] = useState<boolean>(true);
+  const [copied, setCopied] = useState<boolean>(false);
 
-  // GSAP Cinematic Entrance Sequence
   useEffect(() => {
+    // Cyber digital confetti
     const launchConfetti = () => {
       confetti({
-        particleCount: 85,
+        particleCount: 90,
         spread: 90,
         origin: { y: 0.35, x: 0.5 },
-        colors: ['#ffd700', '#dc2626', '#00e5ff', '#e040fb', '#ffffff'],
+        colors: ['#00ff66', '#00e5ff', '#ff3344', '#ffffff', '#ffd700'],
       });
     };
 
@@ -65,7 +77,7 @@ export const FinalSurprise: React.FC<FinalSurpriseProps> = ({ onReplayAll, onBac
         particleCount: 160,
         spread: 110,
         origin: { y: 0.6 },
-        colors: ['#ffd700', '#ffb703', '#ffffff', '#e040fb', '#dc2626'],
+        colors: ['#00ff66', '#00e5ff', '#ffffff', '#ffd700'],
       });
     } else {
       soundSystem.playScore();
@@ -79,10 +91,21 @@ export const FinalSurprise: React.FC<FinalSurpriseProps> = ({ onReplayAll, onBac
       particleCount: 110,
       spread: 85,
       origin: { y: 0.5 },
+      colors: ['#00ff66', '#00e5ff', '#ff3344', '#ffd700'],
     });
   };
 
-  // Split letter message into readable paragraphs
+  const handleShareCard = () => {
+    soundSystem.playClick();
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(
+        `Happy Birthday South Dev! 🎉 Check out your personalized cyber intrusion surprise created by Aakash & Sanjay: ${window.location.origin}`
+      );
+      setCopied(true);
+      setTimeout(() => setCopied(false), 3000);
+    }
+  };
+
   const messageParagraphs = BIRTHDAY_CONFIG.birthdayLetter.message
     .split('\n\n')
     .filter((p) => p.trim().length > 0);
@@ -100,17 +123,20 @@ export const FinalSurprise: React.FC<FinalSurpriseProps> = ({ onReplayAll, onBac
         alignItems: 'center',
         justifyContent: 'center',
         zIndex: 10,
+        fontFamily: 'var(--font-mono)',
       }}
     >
-      {/* Top Bar Navigation */}
+      {/* Top Navigation */}
       <div
         style={{
           width: '100%',
-          maxWidth: '680px',
+          maxWidth: '700px',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
           marginBottom: '20px',
+          flexWrap: 'wrap',
+          gap: '10px',
         }}
       >
         <button
@@ -118,41 +144,72 @@ export const FinalSurprise: React.FC<FinalSurpriseProps> = ({ onReplayAll, onBac
             soundSystem.playClick();
             onBackToArcade();
           }}
-          className="btn-secondary"
-          style={{ padding: '8px 16px', fontSize: '0.88rem' }}
+          className="btn-cyber-secondary"
+          style={{ padding: '8px 16px', fontSize: '0.82rem' }}
         >
-          <ArrowLeft size={16} />
-          <span>Arcade Menu</span>
+          <ArrowLeft size={15} />
+          <span>[ ARCADE_HUB ]</span>
         </button>
 
-        <button
-          onClick={handleConfettiShower}
-          className="btn-secondary"
-          style={{ padding: '8px 16px', fontSize: '0.88rem', borderColor: 'rgba(255, 215, 0, 0.4)' }}
-        >
-          <Sparkles size={16} color="#ffd700" />
-          <span>Shower Confetti</span>
-        </button>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button
+            onClick={handleShareCard}
+            className="btn-cyber-secondary"
+            style={{ padding: '8px 14px', fontSize: '0.82rem', borderColor: '#00e5ff', color: '#00e5ff' }}
+          >
+            {copied ? <Check size={14} /> : <Share2 size={14} />}
+            <span>{copied ? '[ LINK COPIED ]' : '[ SHARE CARD ]'}</span>
+          </button>
+
+          <button
+            onClick={handleConfettiShower}
+            className="btn-cyber-secondary"
+            style={{ padding: '8px 14px', fontSize: '0.82rem', borderColor: '#00ff66', color: '#00ff66' }}
+          >
+            <Sparkles size={14} />
+            <span>[ CYBER SPARKS ]</span>
+          </button>
+        </div>
       </div>
 
-      {/* Main Luxury Birthday Card */}
+      {/* Main Cyber Birthday Card Terminal */}
       <div
         ref={cardRef}
-        className="glass-panel glass-panel-glow"
+        className="terminal-panel"
         style={{
           width: '100%',
-          maxWidth: '680px',
-          padding: 'clamp(28px, 6vw, 54px)',
+          maxWidth: '700px',
+          padding: 'clamp(28px, 6vw, 48px)',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           textAlign: 'center',
-          border: '1px solid rgba(255, 215, 0, 0.45)',
-          boxShadow: '0 24px 60px rgba(0, 0, 0, 0.8), 0 0 60px rgba(255, 215, 0, 0.2)',
+          border: '1px solid #00ff66',
+          boxShadow: '0 0 50px rgba(0, 255, 102, 0.25)',
           position: 'relative',
         }}
       >
-        {/* Ornate Photo Frame */}
+        {/* Terminal Card Tag */}
+        <div
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            background: 'rgba(0, 255, 102, 0.08)',
+            border: '1px solid #00ff66',
+            borderRadius: '4px',
+            padding: '4px 14px',
+            fontSize: '0.78rem',
+            fontWeight: 800,
+            color: '#00ff66',
+            marginBottom: '24px',
+          }}
+        >
+          <Cpu size={14} />
+          <span>SECURITY OVERRIDE COMPLETE // BIRTHDAY CARD DECRYPTED</span>
+        </div>
+
+        {/* Ashu's Photo in Cyber Frame */}
         <div
           ref={photoRef}
           style={{
@@ -162,20 +219,20 @@ export const FinalSurprise: React.FC<FinalSurpriseProps> = ({ onReplayAll, onBac
             margin: '0 auto 28px',
           }}
         >
-          {/* Animated Gold Ring Glow */}
+          {/* Animated Neon Green Rotating Ring */}
           <div
             style={{
               position: 'absolute',
-              inset: -8,
+              inset: -6,
               borderRadius: '50%',
-              background: 'conic-gradient(from 0deg, #ffd700, #dc2626, #00e5ff, #ffd700)',
-              filter: 'blur(12px)',
-              opacity: 0.65,
-              animation: 'spin 12s linear infinite',
+              background: 'conic-gradient(from 0deg, #00ff66, #00e5ff, #ff3344, #00ff66)',
+              filter: 'blur(10px)',
+              opacity: 0.7,
+              animation: 'spin 10s linear infinite',
             }}
           />
 
-          {/* Photo Container */}
+          {/* Photo Frame */}
           <div
             style={{
               position: 'relative',
@@ -183,9 +240,9 @@ export const FinalSurprise: React.FC<FinalSurpriseProps> = ({ onReplayAll, onBac
               height: '100%',
               borderRadius: '50%',
               overflow: 'hidden',
-              border: '4px solid #ffd700',
-              boxShadow: '0 0 25px rgba(255, 215, 0, 0.5), inset 0 0 15px rgba(0,0,0,0.5)',
-              background: '#121422',
+              border: '3px solid #00ff66',
+              boxShadow: '0 0 25px rgba(0, 255, 102, 0.6)',
+              background: '#05070a',
             }}
           >
             <img
@@ -200,7 +257,6 @@ export const FinalSurprise: React.FC<FinalSurpriseProps> = ({ onReplayAll, onBac
             />
           </div>
 
-          {/* Crown */}
           <div
             style={{
               position: 'absolute',
@@ -208,21 +264,21 @@ export const FinalSurprise: React.FC<FinalSurpriseProps> = ({ onReplayAll, onBac
               left: '50%',
               transform: 'translateX(-50%)',
               fontSize: '2rem',
-              filter: 'drop-shadow(0 4px 10px rgba(0,0,0,0.5))',
+              filter: 'drop-shadow(0 0 10px #00ff66)',
             }}
           >
             👑
           </div>
         </div>
 
-        {/* Heading */}
+        {/* Cyber Title */}
         <h1
-          className="gold-text-shimmer neon-title"
+          className="text-neon-green glitch-text"
+          data-text={BIRTHDAY_CONFIG.surpriseHeading}
           style={{
-            fontFamily: 'Cinzel, serif',
-            fontSize: 'clamp(2.1rem, 5.5vw, 3.2rem)',
+            fontSize: 'clamp(1.8rem, 4.8vw, 2.7rem)',
             fontWeight: 900,
-            lineHeight: 1.15,
+            lineHeight: 1.2,
             marginBottom: '10px',
           }}
         >
@@ -231,17 +287,17 @@ export const FinalSurprise: React.FC<FinalSurpriseProps> = ({ onReplayAll, onBac
 
         <p
           style={{
-            color: '#ffd700',
-            fontSize: 'clamp(0.95rem, 2.6vw, 1.15rem)',
-            fontWeight: 500,
+            color: '#00e5ff',
+            fontSize: 'clamp(0.88rem, 2.5vw, 1.05rem)',
+            fontWeight: 600,
             marginBottom: '32px',
-            maxWidth: '520px',
+            maxWidth: '540px',
           }}
         >
           {BIRTHDAY_CONFIG.surpriseSubheading}
         </p>
 
-        {/* Interactive Birthday Cake */}
+        {/* Cyber-Themed Birthday Cake */}
         <div
           style={{
             margin: '0 auto 36px',
@@ -254,26 +310,26 @@ export const FinalSurprise: React.FC<FinalSurpriseProps> = ({ onReplayAll, onBac
             style={{
               position: 'relative',
               width: '200px',
-              height: '140px',
+              height: '130px',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'flex-end',
             }}
           >
-            {/* Candles */}
-            <div style={{ display: 'flex', gap: '32px', marginBottom: '4px', position: 'relative', zIndex: 3 }}>
+            {/* Cyber Laser Candles */}
+            <div style={{ display: 'flex', gap: '34px', marginBottom: '4px', position: 'relative', zIndex: 3 }}>
               {[0, 1, 2].map((i) => (
                 <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                   {candlesLit ? (
                     <div
                       style={{
-                        width: '12px',
-                        height: '18px',
-                        borderRadius: '50% 50% 35% 35%',
-                        background: 'radial-gradient(ellipse at 50% 60%, #ffffff 0%, #ffeb3b 40%, #ff5722 90%)',
-                        boxShadow: '0 0 16px #ff9800, 0 0 30px #ffeb3b',
-                        animation: `flicker ${0.6 + i * 0.15}s infinite alternate ease-in-out`,
+                        width: '10px',
+                        height: '20px',
+                        borderRadius: '50% 50% 30% 30%',
+                        background: 'radial-gradient(ellipse at 50% 60%, #ffffff 0%, #00ff66 40%, #00e5ff 90%)',
+                        boxShadow: '0 0 16px #00ff66, 0 0 30px #00e5ff',
+                        animation: `cyberFlame ${0.5 + i * 0.15}s infinite alternate ease-in-out`,
                       }}
                     />
                   ) : (
@@ -281,18 +337,19 @@ export const FinalSurprise: React.FC<FinalSurpriseProps> = ({ onReplayAll, onBac
                       style={{
                         width: '3px',
                         height: '10px',
-                        background: '#64748b',
+                        background: '#5c7866',
                         borderRadius: '2px',
                         opacity: 0.6,
                       }}
                     />
                   )}
+                  {/* Neon Candle Node */}
                   <div
                     style={{
-                      width: '8px',
+                      width: '6px',
                       height: '24px',
-                      background: 'repeating-linear-gradient(45deg, #ffd700, #ffd700 4px, #dc2626 4px, #dc2626 8px)',
-                      borderRadius: '3px 3px 0 0',
+                      background: 'repeating-linear-gradient(45deg, #00ff66, #00ff66 3px, #00e5ff 3px, #00e5ff 6px)',
+                      borderRadius: '2px 2px 0 0',
                     }}
                   />
                 </div>
@@ -303,114 +360,104 @@ export const FinalSurprise: React.FC<FinalSurpriseProps> = ({ onReplayAll, onBac
             <div
               style={{
                 width: '140px',
-                height: '38px',
-                background: 'linear-gradient(180deg, #fce7f3 0%, #f472b6 100%)',
-                borderRadius: '16px 16px 4px 4px',
-                border: '2px solid rgba(255, 255, 255, 0.4)',
-                boxShadow: '0 4px 10px rgba(0,0,0,0.3)',
+                height: '36px',
+                background: '#0a141b',
+                borderRadius: '4px',
+                border: '1.5px solid #00ff66',
+                boxShadow: '0 0 14px rgba(0, 255, 102, 0.4)',
                 position: 'relative',
                 zIndex: 2,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '0.75rem',
+                color: '#00ff66',
+                fontWeight: 800,
               }}
             >
-              <div
-                style={{
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  height: '12px',
-                  background: '#ffffff',
-                  borderRadius: '14px 14px 8px 8px',
-                  opacity: 0.9,
-                }}
-              />
+              LEVEL_21 // UNLOCKED
             </div>
 
             {/* Cake Bottom Tier */}
             <div
               style={{
                 width: '190px',
-                height: '52px',
-                background: 'linear-gradient(180deg, #7c3aed 0%, #4c1d95 100%)',
-                borderRadius: '16px 16px 6px 6px',
-                border: '2px solid rgba(255, 215, 0, 0.35)',
-                boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+                height: '48px',
+                background: '#060a0f',
+                borderRadius: '4px',
+                border: '1.5px solid #00e5ff',
+                boxShadow: '0 0 20px rgba(0, 229, 255, 0.3)',
                 position: 'relative',
                 zIndex: 1,
                 marginTop: '-2px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-around',
+                padding: '0 16px',
               }}
             >
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-around',
-                  padding: '12px 14px 0',
-                }}
-              >
-                {[...Array(7)].map((_, idx) => (
-                  <div
-                    key={idx}
-                    style={{
-                      width: '8px',
-                      height: '8px',
-                      borderRadius: '50%',
-                      background: '#ffd700',
-                      boxShadow: '0 0 6px rgba(255, 215, 0, 0.8)',
-                    }}
-                  />
-                ))}
-              </div>
+              {[...Array(6)].map((_, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    width: '6px',
+                    height: '6px',
+                    borderRadius: '50%',
+                    background: '#00ff66',
+                    boxShadow: '0 0 8px #00ff66',
+                  }}
+                />
+              ))}
             </div>
           </div>
 
           <button
             onClick={handleToggleCandles}
-            className="btn-secondary"
+            className="btn-cyber-secondary"
             style={{
               marginTop: '16px',
-              padding: '8px 20px',
-              fontSize: '0.88rem',
-              color: candlesLit ? '#ffd700' : '#4ade80',
-              borderColor: candlesLit ? 'rgba(255, 215, 0, 0.4)' : '#4ade80',
+              padding: '8px 18px',
+              fontSize: '0.82rem',
+              color: candlesLit ? '#00ff66' : '#00e5ff',
+              borderColor: candlesLit ? '#00ff66' : '#00e5ff',
             }}
           >
             {candlesLit ? (
               <>
-                <Wind size={16} />
-                <span>Make a Wish & Blow Out Candles</span>
+                <Wind size={15} />
+                <span>[ EXTINGUISH CYBER CANDLES ]</span>
               </>
             ) : (
               <>
-                <Flame size={16} />
-                <span>Relight Candles</span>
+                <Flame size={15} />
+                <span>[ RELIGHT CANDLES ]</span>
               </>
             )}
           </button>
         </div>
 
-        {/* Personalized Message Signed by Aakash & Sanjay */}
+        {/* Message Dossier */}
         <div
           ref={letterRef}
           style={{
             width: '100%',
-            maxWidth: '560px',
-            background: 'rgba(15, 17, 30, 0.75)',
-            backdropFilter: 'blur(12px)',
-            border: '1px solid rgba(255, 215, 0, 0.3)',
-            borderRadius: '20px',
+            maxWidth: '580px',
+            background: 'rgba(8, 14, 20, 0.85)',
+            border: '1px solid rgba(0, 255, 102, 0.35)',
+            borderRadius: '6px',
             padding: '28px 24px',
             textAlign: 'left',
             marginBottom: '36px',
-            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08), 0 10px 30px rgba(0,0,0,0.4)',
+            boxShadow: 'inset 0 1px 0 rgba(0, 255, 102, 0.1)',
           }}
         >
           {messageParagraphs.map((para, idx) => (
             <p
               key={idx}
               style={{
-                fontSize: '1rem',
+                fontSize: '0.96rem',
                 lineHeight: 1.75,
-                color: '#e2e8f0',
+                color: '#e2fce8',
                 marginBottom: '16px',
               }}
             >
@@ -418,14 +465,13 @@ export const FinalSurprise: React.FC<FinalSurpriseProps> = ({ onReplayAll, onBac
             </p>
           ))}
 
-          {/* Signature by Aakash & Sanjay */}
-          <div style={{ marginTop: '24px', paddingTop: '18px', borderTop: '1px solid rgba(255, 215, 0, 0.2)' }}>
+          {/* Signature */}
+          <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid rgba(0, 255, 102, 0.25)' }}>
             <div
               style={{
-                fontSize: '1.35rem',
+                fontSize: '1.25rem',
                 fontWeight: 900,
-                color: '#ffd700',
-                fontFamily: 'Cinzel, serif',
+                color: '#00ff66',
                 letterSpacing: '0.04em',
                 display: 'flex',
                 alignItems: 'center',
@@ -433,60 +479,38 @@ export const FinalSurprise: React.FC<FinalSurpriseProps> = ({ onReplayAll, onBac
               }}
             >
               <span>{BIRTHDAY_CONFIG.birthdayLetter.signature}</span>
-              <Heart size={20} fill="#dc2626" color="#dc2626" />
+              <Heart size={18} fill="#ff3344" color="#ff3344" />
             </div>
-            <div style={{ fontSize: '0.85rem', color: '#94a3b8', fontStyle: 'italic', marginTop: '4px' }}>
-              Your forever brothers & partners-in-crime
+            <div style={{ fontSize: '0.8rem', color: '#5c7866', marginTop: '4px' }}>
+              Your forever syndicate brothers & partners-in-crime
             </div>
           </div>
         </div>
 
-        {/* Reusable Audio Player Component */}
+        {/* Reusable Audio Player */}
         <div style={{ width: '100%', display: 'flex', justifyContent: 'center', marginBottom: '32px' }}>
           <AudioPlayer />
         </div>
 
-        {/* Action Controls */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '14px',
-            flexWrap: 'wrap',
-          }}
-        >
-          <button
-            onClick={() => {
-              soundSystem.playClick();
-              onBackToArcade();
-            }}
-            className="btn-secondary"
-            style={{ padding: '12px 24px' }}
-          >
+        {/* Actions */}
+        <div style={{ display: 'flex', gap: '14px', justifyContent: 'center', flexWrap: 'wrap' }}>
+          <button onClick={onBackToArcade} className="btn-cyber-secondary" style={{ padding: '12px 24px' }}>
             <ArrowLeft size={16} />
-            <span>Return to Arcade</span>
+            <span>[ RETURN TO ARCADE ]</span>
           </button>
 
-          <button
-            onClick={() => {
-              soundSystem.playClick();
-              onReplayAll();
-            }}
-            className="btn-primary-glow"
-            style={{ padding: '12px 28px' }}
-          >
+          <button onClick={onReplayAll} className="btn-cyber-primary" style={{ padding: '12px 26px' }}>
             <RotateCcw size={16} />
-            <span>Replay Entire Journey</span>
+            <span>[ REBOOT SYSTEM INTRUSION ]</span>
           </button>
         </div>
       </div>
 
       <style>{`
-        @keyframes flicker {
-          0% { transform: scale(1) rotate(-1deg); }
-          50% { transform: scale(1.08) rotate(2deg); }
-          100% { transform: scale(0.95) rotate(-2deg); }
+        @keyframes cyberFlame {
+          0% { transform: scale(1) translateY(0); filter: drop-shadow(0 0 6px #00ff66); }
+          50% { transform: scale(1.1) translateY(-2px); filter: drop-shadow(0 0 14px #00e5ff); }
+          100% { transform: scale(0.95) translateY(1px); filter: drop-shadow(0 0 8px #00ff66); }
         }
         @keyframes spin {
           from { transform: rotate(0deg); }

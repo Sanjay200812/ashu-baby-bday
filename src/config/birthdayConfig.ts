@@ -1,10 +1,10 @@
 /**
  * ====================================================================
- * 🎂 BIRTHDAY ARCADE CONFIGURATION
- * Aakash & Sanjay's Birthday Surprise
+ * 🎂 SOUTH DEV // BIRTHDAY SYSTEM BREACH CONFIGURATION
+ * Created by Aakash & Sanjay for Ashu (South Dev)
  * ====================================================================
- * You can customize the entire experience from this single file!
- * Update names, dates, quiz questions, photo paths, and messages here.
+ * Pure cyberpunk terminal customization file.
+ * All quiz questions, secret terminal commands, and birthday messages are here!
  */
 
 export interface QuizQuestion {
@@ -25,28 +25,39 @@ export interface MovieQuestion {
   funFact: string;
 }
 
+export interface DataFragment {
+  id: number;
+  title: string;
+  encryptedCode: string;
+  decryptedMessage: string;
+  sourceGame: string;
+}
+
 export interface BirthdayConfig {
-  // 1. Personal Details
+  // 1. Target Identity
   personName: string;
-  nickname: string;
+  codename: string;
   dob: string; // YYYY-MM-DD
   lockPassword: string; // 03112005
   signers: string[]; // ["Aakash", "Sanjay"]
 
-  // 2. Personal Assets (Relative to the public folder)
-  photoUrl: string;          // Main photo displayed in the Final Birthday Surprise
-  characterFaceUrl: string;  // Head/face image mounted on character in games
-  sleepingPhotoUrl: string;  // Sleeping photo used in Sleep Mode & reactions
-  eatingPhotoUrl: string;    // Food-eating photo used in Catch the Food & reactions
-  birthdaySongUrl: string;   // MP3 or WAV audio track (Built-in synthesizer used if file not found)
-  songTitle: string;         // Display title for the music player
-  songArtist: string;        // Display artist/dedication for the music player
+  // 2. Personal Assets (in public/images/ and public/audio/)
+  photoUrl: string;
+  characterFaceUrl: string;
+  sleepingPhotoUrl: string;
+  eatingPhotoUrl: string;
+  birthdaySongUrl: string;
+  songTitle: string;
+  songArtist: string;
 
-  // 3. Opening Welcome Screen
+  // 3. Stage One: System Breach Boot Script
   openingTitle: string;
   openingSubtitle: string;
+  bootLogs: string[];
+  breachWarning: string;
+  breachMessage: string;
 
-  // 4. Final Birthday Message
+  // 4. Final Birthday Transmission
   surpriseHeading: string;
   surpriseSubheading: string;
   birthdayLetter: {
@@ -54,32 +65,30 @@ export interface BirthdayConfig {
     signature: string;
   };
 
-  // 5. Visual Theme
+  // 5. Visual Palette
   theme: {
-    primaryColor: string;     // Warm champagne gold
-    crimsonAccent: string;    // Crimson red gaming accent
-    secondaryColor: string;   // Neon violet
-    accentColor: string;      // Cyan
-    darkBg: string;           // Midnight dark canvas
+    neonGreen: string;
+    neonCyan: string;
+    alertRed: string;
+    darkBg: string;
   };
 
-  // 6. Target Score for Flap Level 1
+  // 6. Gameplay Targets
   flapGoalScore: number;
 
-  // 6. Gaming Quiz Questions
+  // 7. Secret Data Fragments (Collect in games to decipher secret transmission)
+  dataFragments: DataFragment[];
+
+  // 8. Quizzes
   gamingQuiz: QuizQuestion[];
-
-  // 7. Funny and Personal Quiz Questions (Aakash & Sanjay edition)
   personalQuiz: QuizQuestion[];
-
-  // 8. Movie Lover Challenge Questions
   movieQuiz: MovieQuestion[];
 }
 
 export const BIRTHDAY_CONFIG: BirthdayConfig = {
-  // 1. Personal Details
+  // 1. Target Identity
   personName: "Ashu",
-  nickname: "Bro",
+  codename: "SOUTH DEV",
   dob: "2005-11-03", // November 3, 2005
   lockPassword: "03112005",
   signers: ["Aakash", "Sanjay"],
@@ -90,53 +99,105 @@ export const BIRTHDAY_CONFIG: BirthdayConfig = {
   sleepingPhotoUrl: "/images/sleeping-photo.png",
   eatingPhotoUrl: "/images/eating-photo.png",
   birthdaySongUrl: "/audio/birthday-song.mp3",
-  songTitle: "Birthday Anthem (Bro Edition)",
-  songArtist: "Dedicated by Aakash & Sanjay",
+  songTitle: "South Dev Cyber Anthem v20.05",
+  songArtist: "Composed & Injected by Aakash & Sanjay",
 
-  // 3. Opening Welcome Screen
+  // 3. Stage One: System Breach Boot Script
   openingTitle: "Your Birthday Adventure Starts Here!",
   openingSubtitle: "One birthday. A whole lot of chaos. One unforgettable surprise.",
+  bootLogs: [
+    "INITIALIZING SOUTH DEV SYSTEM...",
+    "ESTABLISHING SECURE CONNECTION...",
+    "UNAUTHORIZED BIRTHDAY SIGNAL DETECTED",
+    "TARGET IDENTIFIED: ASHU",
+    "CODENAME: SOUTH DEV",
+    "BYPASSING SECURITY FIREWALL [100%]...",
+    "INJECTING CELEBRATION PAYLOAD...",
+    "BIRTHDAY SURPRISE PROTOCOL ACTIVATED",
+  ],
+  breachWarning: "WARNING: SYSTEM HAS BEEN TAKEN OVER",
+  breachMessage: "Someone has a birthday surprise for you.",
 
-  // 4. Final Birthday Message
-  surpriseHeading: "Happy Birthday, Bro! 🎂",
-  surpriseSubheading: "Another year older, another level unlocked.",
+  // 4. Final Birthday Transmission
+  surpriseHeading: "SYSTEM OVERRIDE: HAPPY BIRTHDAY, SOUTH DEV! 🎂",
+  surpriseSubheading: "Final Security Decryption Complete // Signed by Aakash & Sanjay",
   birthdayLetter: {
-    message: `Happy Birthday!
+    message: `Happy Birthday, Ashu!
 
-Another year older, another level unlocked.
+Another year older. Another level unlocked.
 
-Wishing you more happiness, more adventures, more success, and countless unforgettable memories.
+Keep building, keep dreaming, keep gaming, and keep being the legend you are.
 
-Keep chasing your dreams, keep being yourself, and never lose that crazy energy.
+Wishing you more success, more adventures, more laughter, and countless unforgettable memories.
 
-Here's to another year of friendship, laughter, and legendary moments.
+Here's to another year of crazy moments, legendary gameplay, and everything you're working towards.
 
-Happy Birthday, bro!`,
+Happy Birthday, South Dev!`,
     signature: "— Aakash & Sanjay",
   },
 
-  // 5. Visual Theme
+  // 5. Visual Palette
   theme: {
-    primaryColor: "#FFD700",    // Champagne Gold
-    crimsonAccent: "#DC2626",   // Crimson Red Gaming
-    secondaryColor: "#E040FB",  // Neon Violet
-    accentColor: "#00E5FF",     // Cyan
-    darkBg: "#0B0C14",
+    neonGreen: "#00ff66",
+    neonCyan: "#00e5ff",
+    alertRed: "#ff3344",
+    darkBg: "#05070a",
   },
+
+  // 6. Flap Target Score
   flapGoalScore: 10,
 
-  // 6. Gaming Quiz (GTA, Spider-Man, Free Fire, General Gaming)
+  // 7. Secret Data Fragments
+  dataFragments: [
+    {
+      id: 1,
+      title: "FRAGMENT_ALPHA",
+      encryptedCode: "0x7F4B9_SOUTH_CODE",
+      decryptedMessage: "Bro code verified: Aakash & Sanjay have your back 24/7.",
+      sourceGame: "Birthday Flap",
+    },
+    {
+      id: 2,
+      title: "FRAGMENT_BETA",
+      encryptedCode: "0x89C1D_GTA_DRIFT",
+      decryptedMessage: "Speed limiter removed: You are destined for giant breakthroughs this year.",
+      sourceGame: "GTA Digital Escape",
+    },
+    {
+      id: 3,
+      title: "FRAGMENT_GAMMA",
+      encryptedCode: "0x33A2E_SPIDER_WEB",
+      decryptedMessage: "With great coding comes great responsibility: South Dev keeps leveling up.",
+      sourceGame: "Web Protocol",
+    },
+    {
+      id: 4,
+      title: "FRAGMENT_DELTA",
+      encryptedCode: "0x51E90_SURVIVAL_ZONE",
+      decryptedMessage: "Booyah guaranteed: Every challenge in life is just another lobby to dominate.",
+      sourceGame: "Free Fire Survival",
+    },
+    {
+      id: 5,
+      title: "FRAGMENT_OMEGA",
+      encryptedCode: "0x99F01_MIDNIGHT_FEAST",
+      decryptedMessage: "No diet allowed today: Unlimited biryani and cake protocol initialized!",
+      sourceGame: "Food.exe",
+    },
+  ],
+
+  // 8. Gaming Knowledge Database
   gamingQuiz: [
     {
       id: "g1",
-      question: "In GTA San Andreas, what is the legendary cheat code for maximum health, armor, and $250,000?",
+      question: "In GTA San Andreas, what is the legendary cheat code for full health, armor, and $250,000?",
       options: ["HESOYAM", "BAGUVIX", "AEZAKMI", "ROCKETMAN"],
       correctIndex: 0,
-      explanation: "HESOYAM is the legendary code etched into every true gamer's memory!",
+      explanation: "HESOYAM is burned into every South Dev hacker's memory!",
     },
     {
       id: "g2",
-      question: "In Spider-Man lore, what famous quote did Uncle Ben give to Peter Parker?",
+      question: "In Spider-Man lore, what famous line defines Peter Parker's heroic path?",
       options: [
         "With great power comes great responsibility",
         "Never give up, never back down",
@@ -144,25 +205,30 @@ Happy Birthday, bro!`,
         "Webs don't shoot themselves",
       ],
       correctIndex: 0,
-      explanation: "'With great power comes great responsibility' — iconic and unforgettable.",
+      explanation: "The ultimate superhero principle: With great power comes great responsibility.",
     },
     {
       id: "g3",
-      question: "In Free Fire, which popular DJ character has the active healing ability 'Drop the Beat'?",
+      question: "In Free Fire, which DJ character uses the active healing aura 'Drop the Beat'?",
       options: ["Alok", "K (Captain Booyah)", "Chrono", "Hayato"],
       correctIndex: 0,
-      explanation: "DJ Alok and his 5m aura that boosts movement speed and restores HP!",
+      explanation: "DJ Alok — the undisputed battle royale squad savior!",
     },
     {
       id: "g4",
-      question: "What is the primary currency earned by surviving and scoring Booyah in battle royales like Free Fire?",
-      options: ["Rank Points & Gold", "V-Bucks", "Minecoins", "Robux"],
+      question: "In cyber-gaming terminology, what does 'FPS' stand for?",
+      options: [
+        "Frames Per Second / First-Person Shooter",
+        "Fast Packet Stream",
+        "Frequency Power System",
+        "File Processing Server",
+      ],
       correctIndex: 0,
-      explanation: "Rank Points push you straight to Grandmaster tier!",
+      explanation: "Frames Per Second for smoothness, First-Person Shooter for gameplay!",
     },
     {
       id: "g5",
-      question: "In GTA V, which three protagonists make up the chaotic trio?",
+      question: "In GTA V, which chaotic trio forms the criminal masterminds of Los Santos?",
       options: [
         "Michael, Franklin, and Trevor",
         "CJ, Tommy Vercetti, and Claude",
@@ -170,63 +236,63 @@ Happy Birthday, bro!`,
         "Niko Bellic, Roman, and Little Jacob",
       ],
       correctIndex: 0,
-      explanation: "Michael, Franklin, and Trevor — pure cinematic chaos!",
+      explanation: "Michael, Franklin, and Trevor — pure digital pandemonium!",
     },
   ],
 
-  // 7. Funny & Personal Quiz (Aakash & Sanjay Edition)
+  // 9. Personal Data Interrogation (Aakash & Sanjay edition)
   personalQuiz: [
     {
       id: "p1",
-      question: "When Aakash, Sanjay, and the birthday boy plan to meet up at 5:00 PM, what time does he actually arrive?",
+      question: "When Aakash and Sanjay plan a meetup at 5:00 PM, what is South Dev's expected arrival time?",
       options: [
         "5:45 PM with 'Bro I'm 2 mins away!'",
-        "4:55 PM sharp (Never in history)",
+        "4:55 PM sharp (Never in recorded history)",
         "Next day morning",
-        "Still waiting for his battery to charge",
+        "Still buffering in bed",
       ],
       correctIndex: 0,
-      explanation: "Classic! The legendary 'Bro I just turned the corner' when he hasn't even left his bed!",
+      explanation: "Classic! The legendary 'Bro I just turned the corner' while still brushing his teeth!",
     },
     {
       id: "p2",
-      question: "If there is only ONE last slice of pizza or piece of biryani left, what happens?",
+      question: "If there is exactly ONE last slice of pizza or piece of biryani left on the table, what happens?",
       options: [
-        "He distracts Aakash & Sanjay and swallows it whole",
+        "South Dev distracts Aakash & Sanjay and swallows it whole",
         "He politely offers it to Sanjay",
         "He donates it to charity",
         "He puts it in the fridge for tomorrow",
       ],
       correctIndex: 0,
-      explanation: "Food ninja mode activated! The plate is clean before anyone blinks.",
+      explanation: "Food ninja protocol activated! The plate is licked clean before anyone blinks.",
     },
     {
       id: "p3",
-      question: "What is his official reaction when he gets eliminated in the first 2 minutes of a squad match?",
+      question: "What is South Dev's official diagnosis when he dies in the first 2 minutes of a squad match?",
       options: [
-        "'Bro huge ping lag! My joystick stopped working!'",
-        "'My bad guys, good shot by the enemy'",
+        "'Bro 999ms ping spike! My screen froze!'",
+        "'My bad guys, enemy played well'",
         "Uninstalls the game immediately",
         "Goes to sleep peacefully",
       ],
       correctIndex: 0,
-      explanation: "It's NEVER his fault — it's 999ms ping, a phone glitch, or cosmic interference!",
+      explanation: "It's NEVER his fault — it's always cosmic WiFi interference or an optical glitch!",
     },
     {
       id: "p4",
-      question: "Which of the following describes his ultimate superpower in college?",
+      question: "What is Ashu's true superhuman superpower in college?",
       options: [
         "Sleeping 14 hours straight through 8 alarms",
         "Completing assignments 2 weeks in advance",
-        "Waking up at 5:00 AM for jogging",
+        "Waking up at 5:00 AM for morning jogs",
         "Reading terms & conditions completely",
       ],
       correctIndex: 0,
-      explanation: "He could sleep through an earthquake, a thunderstorm, and 12 phone calls!",
+      explanation: "He could sleep through an alien invasion, an earthquake, and 14 missed calls!",
     },
     {
       id: "p5",
-      question: "Who are the two most loyal, legendary, and handsome friends in his life?",
+      question: "Who are the two most loyal, legendary, and handsome hackers in his life?",
       options: [
         "Aakash & Sanjay (100% indisputable fact)",
         "Aakash & Sanjay (Also this)",
@@ -234,11 +300,11 @@ Happy Birthday, bro!`,
         "All of the above!",
       ],
       correctIndex: 3,
-      explanation: "No doubt about it! Certified by international friendship standards.",
+      explanation: "Confirmed by global brotherly consensus: Aakash & Sanjay for life!",
     },
   ],
 
-  // 8. Movie Lover Challenge
+  // 10. Movie Knowledge Decryption
   movieQuiz: [
     {
       id: "m1",
@@ -247,11 +313,11 @@ Happy Birthday, bro!`,
       clues: [
         "A team of astronauts travel through a wormhole near Saturn.",
         "'Love is the one thing that transcends time and space.'",
-        "TARS and a dusty bookshelf in a 5th-dimensional tesseract.",
+        "TARS robot and a 5th-dimensional tesseract bookshelf.",
       ],
       options: ["Interstellar", "Gravity", "The Martian", "Inception"],
       correctIndex: 0,
-      funFact: "Directed by Christopher Nolan with that legendary Hans Zimmer organ soundtrack!",
+      funFact: "Directed by Christopher Nolan with that legendary Hans Zimmer organ score!",
     },
     {
       id: "m2",
@@ -259,8 +325,8 @@ Happy Birthday, bro!`,
       emojiClue: "🦇 🃏 🏙️ 🤡 💰",
       clues: [
         "'Why so serious?'",
-        "A pencil magic trick inside a mob meeting.",
-        "Harvey Dent, Gordon, and Gotham's caped protector.",
+        "A pencil magic trick inside a mob summit.",
+        "Harvey Dent, Commissioner Gordon, and Gotham's caped hero.",
       ],
       options: ["The Dark Knight", "The Batman", "Joker", "Batman Begins"],
       correctIndex: 0,
@@ -272,38 +338,38 @@ Happy Birthday, bro!`,
       emojiClue: "🧤 💎 ⚡ 🛡️ ⏳",
       clues: [
         "'I love you 3000.'",
-        "A time-heist to gather six infinity stones.",
+        "A quantum time-heist to gather six infinity stones.",
         "'Avengers... Assemble!'",
       ],
       options: ["Avengers: Endgame", "Avengers: Infinity War", "Captain America: Civil War", "Thor: Ragnarok"],
       correctIndex: 0,
-      funFact: "The ultimate climax of the 22-movie Infinity Saga!",
+      funFact: "The epic culmination of the 22-film Infinity Saga!",
     },
     {
       id: "m4",
       movieTitle: "Spider-Man: No Way Home",
       emojiClue: "🕷️ 🕸️ 🌀 🧪 ⚡",
       clues: [
-        "Doctor Strange's memory spell goes wrong.",
+        "Doctor Strange's memory wipe spell fractures reality.",
         "Three generations of web-slingers unite on the Statue of Liberty.",
         "'Peter, I'm so sorry.'",
       ],
       options: ["Spider-Man: No Way Home", "Into the Spider-Verse", "Spider-Man 3", "The Amazing Spider-Man 2"],
       correctIndex: 0,
-      funFact: "Brought Tobey Maguire, Andrew Garfield, and Tom Holland together on screen!",
+      funFact: "Brought Tobey Maguire, Andrew Garfield, and Tom Holland together in one frame!",
     },
     {
       id: "m5",
       movieTitle: "Inception",
       emojiClue: "🌀 💤 🚂 🏢 🎲",
       clues: [
-        "A thief who steals corporate secrets through dream-sharing technology.",
-        "A spinning brass totem that might never fall.",
-        "A city street folding in half in Paris.",
+        "A thief who extracts corporate secrets by entering dreams.",
+        "A spinning brass totem that might never topple over.",
+        "A city street in Paris folding vertically in half.",
       ],
       options: ["Inception", "Shutter Island", "Tenet", "The Matrix"],
       correctIndex: 0,
-      funFact: "Does the spinning top drop at the end? The debate continues forever!",
+      funFact: "Does the spinning top wobble and fall at the end? The debate continues forever!",
     },
   ],
 };
