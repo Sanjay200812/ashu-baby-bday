@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
-import { Film, ArrowRight, ArrowLeft, Sparkles, CheckCircle2, Play, Pause, Volume2, VolumeX, RotateCcw } from 'lucide-react';
+import { Film, ArrowRight, ArrowLeft, Sparkles, CheckCircle2, Play, Pause, Volume2, VolumeX, Lock, AlertTriangle } from 'lucide-react';
 import { BIRTHDAY_CONFIG } from '../../config/birthdayConfig';
 import { soundSystem } from '../../utils/audioSystem';
 
@@ -11,11 +11,14 @@ interface SpecialVideoLevelProps {
 
 export const SpecialVideoLevel: React.FC<SpecialVideoLevelProps> = ({ onComplete, onBack }) => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const maxWatchedTimeRef = useRef<number>(0);
+
   const [hasFinished, setHasFinished] = useState<boolean>(false);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [currentTime, setCurrentTime] = useState<number>(0);
   const [duration, setDuration] = useState<number>(0);
   const [isMuted, setIsMuted] = useState<boolean>(false);
+  const [loadError, setLoadError] = useState<boolean>(false);
 
   // Pause background site music while video is active, resume on unmount
   useEffect(() => {
@@ -51,9 +54,26 @@ export const SpecialVideoLevel: React.FC<SpecialVideoLevelProps> = ({ onComplete
     setIsMuted(video.muted);
   };
 
+  // Strictly disallow skipping/forwarding past watched time
   const handleTimeUpdate = () => {
-    if (!videoRef.current) return;
-    setCurrentTime(videoRef.current.currentTime);
+    const video = videoRef.current;
+    if (!video) return;
+
+    const current = video.currentTime;
+    if (current > maxWatchedTimeRef.current + 1.2) {
+      video.currentTime = maxWatchedTimeRef.current;
+    } else {
+      maxWatchedTimeRef.current = Math.max(maxWatchedTimeRef.current, current);
+    }
+    setCurrentTime(video.currentTime);
+  };
+
+  const handleSeeking = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (video.currentTime > maxWatchedTimeRef.current + 0.5) {
+      video.currentTime = maxWatchedTimeRef.current;
+    }
   };
 
   const handleLoadedMetadata = () => {
@@ -74,6 +94,7 @@ export const SpecialVideoLevel: React.FC<SpecialVideoLevelProps> = ({ onComplete
   };
 
   const handleProceed = () => {
+    if (!hasFinished) return;
     soundSystem.playClick();
     soundSystem.playSiteMusic();
     onComplete();
@@ -136,7 +157,7 @@ export const SpecialVideoLevel: React.FC<SpecialVideoLevelProps> = ({ onComplete
         </div>
 
         <div style={{ fontSize: '0.78rem', color: hasFinished ? '#ffb703' : '#9e646d', fontWeight: 700 }}>
-          {hasFinished ? '✓ REEL COMPLETE' : '🎬 SPECIAL REEL'}
+          {hasFinished ? '✓ REEL COMPLETE' : '⏳ WATCH TO UNLOCK'}
         </div>
       </div>
 
@@ -183,7 +204,7 @@ export const SpecialVideoLevel: React.FC<SpecialVideoLevelProps> = ({ onComplete
         </h2>
 
         <p style={{ color: '#cbd5e1', fontSize: '0.84rem', marginBottom: '16px', lineHeight: 1.5 }}>
-          Video start avvagane background song pause avthadi. Full tribute chusi enjoy chey Ashuu!
+          Video start avvagane background song pause avthadi. Full tribute reel chusaka Level 9 unlock avthadi!
         </p>
 
         {/* Video Player Box */}
@@ -207,10 +228,12 @@ export const SpecialVideoLevel: React.FC<SpecialVideoLevelProps> = ({ onComplete
             onPlay={handlePlay}
             onPause={handlePause}
             onTimeUpdate={handleTimeUpdate}
+            onSeeking={handleSeeking}
             onLoadedMetadata={handleLoadedMetadata}
             onEnded={handleEnded}
             onError={(e) => {
-              console.error('Special video error event:', e);
+              console.error('Special video load error event:', e);
+              setLoadError(true);
             }}
             style={{
               width: '100%',
@@ -223,7 +246,7 @@ export const SpecialVideoLevel: React.FC<SpecialVideoLevelProps> = ({ onComplete
           </video>
 
           {/* Big Center Play Overlay Button when Paused */}
-          {!isPlaying && (
+          {!isPlaying && !loadError && (
             <div
               onClick={togglePlayPause}
               style={{
@@ -269,6 +292,39 @@ export const SpecialVideoLevel: React.FC<SpecialVideoLevelProps> = ({ onComplete
               </span>
             </div>
           )}
+
+          {loadError && (
+            <div
+              style={{
+                position: 'absolute',
+                inset: 0,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'rgba(5, 5, 8, 0.95)',
+                color: '#ff2a4b',
+                padding: '16px',
+                zIndex: 6,
+              }}
+            >
+              <AlertTriangle size={32} style={{ marginBottom: '8px' }} />
+              <div style={{ fontSize: '0.92rem', fontWeight: 800, marginBottom: '6px' }}>SPECIAL VIDEO FAILED TO LOAD</div>
+              <button
+                onClick={() => {
+                  setLoadError(false);
+                  if (videoRef.current) {
+                    videoRef.current.load();
+                    videoRef.current.play().catch(() => {});
+                  }
+                }}
+                className="btn-cyber-primary"
+                style={{ padding: '8px 16px', fontSize: '0.8rem', marginTop: '8px' }}
+              >
+                RELOAD VIDEO
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Video Info & Progress Bar */}
@@ -310,7 +366,7 @@ export const SpecialVideoLevel: React.FC<SpecialVideoLevelProps> = ({ onComplete
         </div>
 
         {/* Level Proceed & Unlock Buttons */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <div>
           {hasFinished ? (
             <button
               onClick={handleProceed}
@@ -324,23 +380,27 @@ export const SpecialVideoLevel: React.FC<SpecialVideoLevelProps> = ({ onComplete
               }}
             >
               <CheckCircle2 size={18} />
-              <span>[ REEL COMPLETE! PROCEED TO GIFTS VAULT ➔ ]</span>
+              <span>[ REEL COMPLETE! PROCEED TO LEVEL 9: GIFTS VAULT ➔ ]</span>
             </button>
           ) : (
-            <button
-              onClick={handleProceed}
-              className="btn-cyber-primary"
+            <div
               style={{
-                width: '100%',
+                background: 'rgba(255, 42, 75, 0.08)',
+                border: '1px solid rgba(255, 42, 75, 0.3)',
+                borderRadius: '8px',
                 padding: '14px',
-                fontSize: '0.94rem',
-                fontWeight: 800,
-                letterSpacing: '0.03em',
+                color: '#9e646d',
+                fontSize: '0.85rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                fontWeight: 700,
               }}
             >
-              <span>[ CONTINUE TO LEVEL 9: GIFTS VAULT ➔ ]</span>
-              <ArrowRight size={16} />
-            </button>
+              <Lock size={16} color="#ff2a4b" />
+              <span>Next Level is Locked — Watch the entire tribute reel to unlock Level 9!</span>
+            </div>
           )}
         </div>
       </div>

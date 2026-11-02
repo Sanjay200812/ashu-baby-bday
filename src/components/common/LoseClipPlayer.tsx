@@ -26,33 +26,34 @@ export const LoseClipPlayer: React.FC<LoseClipPlayerProps> = ({
     const video = videoRef.current;
     if (!video) return;
 
-    // Reset video to start
     video.currentTime = 0;
 
-    // Attempt unmuted playback first
+    // Play with sound first, fallback to muted if browser blocks
     const playPromise = video.play();
     if (playPromise !== undefined) {
       playPromise
         .then(() => {
           setIsPlaying(true);
           setIsMuted(false);
+          setLoadError(false);
         })
         .catch(() => {
-          // Autoplay with sound was blocked by browser policy -> fallback to muted autoplay
+          // Autoplay with sound deferred by policy -> fallback to muted
           video.muted = true;
           setIsMuted(true);
           video
             .play()
-            .then(() => setIsPlaying(true))
+            .then(() => {
+              setIsPlaying(true);
+              setLoadError(false);
+            })
             .catch(() => {
-              // Both failed, wait for click
               setIsPlaying(false);
             });
         });
     }
 
     return () => {
-      // Cleanup on unmount (when retry button is clicked or game changes)
       if (onResumeMusic) {
         onResumeMusic();
       }
@@ -79,6 +80,21 @@ export const LoseClipPlayer: React.FC<LoseClipPlayerProps> = ({
     const video = videoRef.current;
     if (!video) return;
     video.currentTime = 0;
+    video
+      .play()
+      .then(() => {
+        setIsPlaying(true);
+        setLoadError(false);
+      })
+      .catch(() => {});
+  };
+
+  const handleReload = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setLoadError(false);
+    const video = videoRef.current;
+    if (!video) return;
+    video.load();
     video.play().then(() => setIsPlaying(true)).catch(() => {});
   };
 
@@ -97,12 +113,14 @@ export const LoseClipPlayer: React.FC<LoseClipPlayerProps> = ({
     >
       <video
         ref={videoRef}
-        src={BIRTHDAY_CONFIG.loseClipUrl}
         playsInline
         loop
         preload="auto"
         controls={false}
-        onPlay={() => setIsPlaying(true)}
+        onPlay={() => {
+          setIsPlaying(true);
+          setLoadError(false);
+        }}
         onEnded={() => {
           if (onEnded) onEnded();
         }}
@@ -122,7 +140,7 @@ export const LoseClipPlayer: React.FC<LoseClipPlayerProps> = ({
       </video>
 
       {/* Unmute / Audio Overlay Pill */}
-      {isMuted && isPlaying && (
+      {isMuted && isPlaying && !loadError && (
         <button
           onClick={toggleAudio}
           className="pulse-cyber"
@@ -151,52 +169,54 @@ export const LoseClipPlayer: React.FC<LoseClipPlayerProps> = ({
       )}
 
       {/* Controls Overlay: Quick Restart & Sound Toggle */}
-      <div
-        style={{
-          position: 'absolute',
-          top: '8px',
-          right: '8px',
-          display: 'flex',
-          gap: '6px',
-          zIndex: 10,
-        }}
-      >
-        <button
-          onClick={toggleAudio}
-          title={isMuted ? 'Unmute' : 'Mute'}
+      {!loadError && (
+        <div
           style={{
-            background: 'rgba(5, 5, 8, 0.85)',
-            border: '1px solid rgba(255, 42, 75, 0.5)',
-            borderRadius: '4px',
-            color: isMuted ? '#ff2a4b' : '#ffb703',
-            padding: '4px 6px',
-            cursor: 'pointer',
+            position: 'absolute',
+            top: '8px',
+            right: '8px',
             display: 'flex',
-            alignItems: 'center',
-            fontSize: '0.68rem',
+            gap: '6px',
+            zIndex: 10,
           }}
         >
-          {isMuted ? <VolumeX size={13} /> : <Volume2 size={13} />}
-        </button>
+          <button
+            onClick={toggleAudio}
+            title={isMuted ? 'Unmute' : 'Mute'}
+            style={{
+              background: 'rgba(5, 5, 8, 0.85)',
+              border: '1px solid rgba(255, 42, 75, 0.5)',
+              borderRadius: '4px',
+              color: isMuted ? '#ff2a4b' : '#ffb703',
+              padding: '4px 6px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              fontSize: '0.68rem',
+            }}
+          >
+            {isMuted ? <VolumeX size={13} /> : <Volume2 size={13} />}
+          </button>
 
-        <button
-          onClick={handleRestartClip}
-          title="Replay Clip"
-          style={{
-            background: 'rgba(5, 5, 8, 0.85)',
-            border: '1px solid rgba(255, 42, 75, 0.5)',
-            borderRadius: '4px',
-            color: '#cbd5e1',
-            padding: '4px 6px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            fontSize: '0.68rem',
-          }}
-        >
-          <RotateCcw size={13} />
-        </button>
-      </div>
+          <button
+            onClick={handleRestartClip}
+            title="Replay Clip"
+            style={{
+              background: 'rgba(5, 5, 8, 0.85)',
+              border: '1px solid rgba(255, 42, 75, 0.5)',
+              borderRadius: '4px',
+              color: '#cbd5e1',
+              padding: '4px 6px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              fontSize: '0.68rem',
+            }}
+          >
+            <RotateCcw size={13} />
+          </button>
+        </div>
+      )}
 
       {loadError && (
         <div
@@ -211,10 +231,18 @@ export const LoseClipPlayer: React.FC<LoseClipPlayerProps> = ({
             color: '#ff2a4b',
             padding: '12px',
             textAlign: 'center',
+            zIndex: 10,
           }}
         >
           <AlertTriangle size={24} style={{ marginBottom: '6px' }} />
-          <div style={{ fontSize: '0.8rem', fontWeight: 800 }}>LOSE CLIP FAILED TO LOAD</div>
+          <div style={{ fontSize: '0.8rem', fontWeight: 800, marginBottom: '6px' }}>LOSE CLIP FAILED TO LOAD</div>
+          <button
+            onClick={handleReload}
+            className="btn-cyber-primary"
+            style={{ padding: '4px 10px', fontSize: '0.72rem' }}
+          >
+            RETRY
+          </button>
         </div>
       )}
     </div>
