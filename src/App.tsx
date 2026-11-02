@@ -144,12 +144,9 @@ export const App: React.FC = () => {
       ...p,
       flapCompleted: true,
       flapBestScore: Math.max(p.flapBestScore, score),
+      isUnlocked: true,
     }));
-    if (!progress.isUnlocked) {
-      setCurrentScreen('AUTH');
-    } else {
-      setCurrentScreen('ARCADE');
-    }
+    setCurrentScreen('ARCADE');
     setActiveMiniGame(null);
   };
 
@@ -231,8 +228,10 @@ export const App: React.FC = () => {
       {/* Matrix Rain Stream Overlay */}
       {isMatrixActive && <MatrixRain onClose={() => setIsMatrixActive(false)} />}
 
-      {/* Floating Audio Control & CLI Toggle Pill */}
-      <MusicPlayerPill onOpenCli={() => setIsCliOpen(true)} />
+      {/* Floating Audio Control & CLI Toggle Pill: Only on unlocked arcade/website screens */}
+      {currentScreen !== 'BREACH' && currentScreen !== 'GAME_FLAP' && (
+        <MusicPlayerPill onOpenCli={() => setIsCliOpen(true)} />
+      )}
 
       {/* 1. Stage One: Fake System Breach & Boot */}
       {currentScreen === 'BREACH' && (

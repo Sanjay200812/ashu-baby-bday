@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import gsap from 'gsap';
-import { Terminal, ShieldAlert, FastForward, Play } from 'lucide-react';
-import { BIRTHDAY_CONFIG } from '../../config/birthdayConfig';
+import { Terminal, ShieldAlert, Play, Cpu, Zap } from 'lucide-react';
 import { soundSystem } from '../../utils/audioSystem';
 
 interface SystemBreachScreenProps {
@@ -9,48 +8,35 @@ interface SystemBreachScreenProps {
 }
 
 export const SystemBreachScreen: React.FC<SystemBreachScreenProps> = ({ onEnter }) => {
-  const [displayedLogs, setDisplayedLogs] = useState<string[]>([]);
-  const [progress, setProgress] = useState<number>(0);
-  const [isBootComplete, setIsBootComplete] = useState<boolean>(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [progress, setProgress] = useState<number>(0);
+  const [isReady, setIsReady] = useState<boolean>(false);
 
-  const logs = BIRTHDAY_CONFIG.bootLogs;
-
+  // Fast, punchy boot sequence that lets the player start the game themselves
   useEffect(() => {
-    let logIndex = 0;
-    const logInterval = setInterval(() => {
-      if (logIndex < logs.length) {
-        const nextLog = logs[logIndex];
-        if (nextLog) {
-          setDisplayedLogs((prev) => [...prev, nextLog]);
-        }
-        setProgress(Math.round(((logIndex + 1) / logs.length) * 100));
+    let current = 0;
+    const interval = setInterval(() => {
+      current += 10;
+      if (current >= 100) {
+        current = 100;
+        clearInterval(interval);
+        setIsReady(true);
         soundSystem.playClick();
-        logIndex++;
-      } else {
-        clearInterval(logInterval);
-        setIsBootComplete(true);
-        soundSystem.playScore();
       }
-    }, 450);
+      setProgress(current);
+    }, 70);
 
-    return () => clearInterval(logInterval);
+    return () => clearInterval(interval);
   }, []);
 
-  const handleSkip = () => {
-    soundSystem.playClick();
-    setDisplayedLogs(logs.filter(Boolean));
-    setProgress(100);
-    setIsBootComplete(true);
-  };
-
-  const handleProceed = () => {
+  const handleStartGame = () => {
+    soundSystem.registerUserInteraction();
     soundSystem.playVictory();
     gsap.to(containerRef.current, {
       opacity: 0,
-      scale: 1.05,
-      filter: 'blur(10px)',
-      duration: 0.6,
+      scale: 1.04,
+      filter: 'blur(8px)',
+      duration: 0.5,
       ease: 'power2.inOut',
       onComplete: onEnter,
     });
@@ -73,38 +59,16 @@ export const SystemBreachScreen: React.FC<SystemBreachScreenProps> = ({ onEnter 
         fontFamily: 'var(--font-mono)',
       }}
     >
-      {/* Top Controls */}
-      <div
-        style={{
-          position: 'absolute',
-          top: 18,
-          right: 20,
-          display: 'flex',
-          gap: '12px',
-          zIndex: 20,
-        }}
-      >
-        {!isBootComplete && (
-          <button
-            onClick={handleSkip}
-            className="btn-cyber-secondary"
-            style={{ padding: '6px 14px', fontSize: '0.78rem' }}
-          >
-            <FastForward size={14} />
-            <span>[ SKIP BOOT_ ]</span>
-          </button>
-        )}
-      </div>
-
       {/* Main Terminal Frame */}
       <div
         className="terminal-panel"
         style={{
           width: '100%',
-          maxWidth: '680px',
+          maxWidth: '640px',
           overflow: 'hidden',
-          border: '1px solid rgba(0, 255, 102, 0.4)',
-          boxShadow: '0 0 35px rgba(0, 255, 102, 0.15)',
+          border: '1px solid #00ff66',
+          boxShadow: '0 0 40px rgba(0, 255, 102, 0.25)',
+          borderRadius: '8px',
         }}
       >
         {/* Terminal Header */}
@@ -119,51 +83,76 @@ export const SystemBreachScreen: React.FC<SystemBreachScreenProps> = ({ onEnter 
         </div>
 
         {/* Terminal Body */}
-        <div style={{ padding: '28px 24px', minHeight: '340px' }}>
-          {/* Boot Log Stream */}
-          <div style={{ marginBottom: '24px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {displayedLogs.map((log, idx) => {
-              if (!log) return null;
-              const isWarning = typeof log === 'string' && log.includes('WARNING');
-              const isHighlight =
-                typeof log === 'string' && (log.includes('TARGET') || log.includes('CODENAME'));
-              return (
-                <div
-                  key={idx}
-                  style={{
-                    fontSize: '0.92rem',
-                    color: isWarning ? '#ff3344' : isHighlight ? '#00e5ff' : '#00ff66',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                  }}
-                >
-                  <span style={{ color: 'rgba(0, 255, 102, 0.5)' }}>&gt;</span>
-                  <span>{log}</span>
-                </div>
-              );
-            })}
-
-            {!isBootComplete && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ color: 'rgba(0, 255, 102, 0.5)' }}>&gt;</span>
-                <span className="terminal-cursor" />
-              </div>
-            )}
+        <div style={{ padding: '32px 28px', textAlign: 'center' }}>
+          {/* Target Codename Badge */}
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              background: 'rgba(0, 255, 102, 0.1)',
+              border: '1px solid #00ff66',
+              borderRadius: '4px',
+              padding: '6px 16px',
+              fontSize: '0.8rem',
+              fontWeight: 800,
+              color: '#00ff66',
+              marginBottom: '20px',
+              letterSpacing: '0.08em',
+            }}
+          >
+            <Cpu size={15} />
+            <span>TARGET: ASHU // CODENAME: SOUTH DEV</span>
           </div>
 
-          {/* Progress Bar */}
-          <div style={{ marginBottom: '28px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', marginBottom: '6px' }}>
-              <span style={{ color: '#00e5ff' }}>BUFFER STATUS</span>
+          <h1
+            className="text-neon-green glitch-text"
+            data-text="UNAUTHORIZED SYSTEM BREACH"
+            style={{
+              fontSize: 'clamp(1.7rem, 4vw, 2.3rem)',
+              fontWeight: 900,
+              lineHeight: 1.2,
+              marginBottom: '14px',
+            }}
+          >
+            UNAUTHORIZED SYSTEM BREACH
+          </h1>
+
+          <p
+            style={{
+              color: '#cbd5e1',
+              fontSize: '0.95rem',
+              lineHeight: 1.6,
+              maxWidth: '520px',
+              margin: '0 auto 24px',
+            }}
+          >
+            A secret birthday transmission has been injected into your system by <strong style={{ color: '#00ff66' }}>Aakash & Sanjay</strong>.
+            <br />
+            To decrypt the transmission and unlock your birthday surprise, navigate through <strong style={{ color: '#00e5ff' }}>12 CPU security barriers</strong> in the Flap Protocol!
+          </p>
+
+          {/* Quick Buffer Progress Bar */}
+          <div style={{ width: '100%', maxWidth: '420px', margin: '0 auto 28px' }}>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                fontSize: '0.74rem',
+                color: '#00e5ff',
+                marginBottom: '6px',
+                fontWeight: 700,
+              }}
+            >
+              <span>SYSTEM BUFFER</span>
               <span style={{ color: '#00ff66' }}>{progress}%</span>
             </div>
             <div
               style={{
                 width: '100%',
-                height: '8px',
+                height: '6px',
                 background: 'rgba(255, 255, 255, 0.08)',
-                borderRadius: '2px',
+                borderRadius: '3px',
                 overflow: 'hidden',
               }}
             >
@@ -173,77 +162,34 @@ export const SystemBreachScreen: React.FC<SystemBreachScreenProps> = ({ onEnter 
                   width: `${progress}%`,
                   background: 'linear-gradient(90deg, #00ff66 0%, #00e5ff 100%)',
                   boxShadow: '0 0 10px #00ff66',
-                  transition: 'width 0.3s ease',
+                  transition: 'width 0.1s linear',
                 }}
               />
             </div>
           </div>
 
-          {/* Post-Boot Security Alert & Mystery Message */}
-          {isBootComplete && (
-            <div
+          {/* Clean Start Game Action Button */}
+          <div>
+            <button
+              onClick={handleStartGame}
+              className="btn-cyber-primary pulse-cyber"
               style={{
-                background: 'rgba(255, 51, 68, 0.08)',
-                border: '1px solid rgba(255, 51, 68, 0.4)',
-                borderRadius: '6px',
-                padding: '20px',
-                textAlign: 'center',
-                animation: 'cyberPulse 2s infinite',
-                marginBottom: '28px',
+                padding: '16px 48px',
+                fontSize: '1.15rem',
+                letterSpacing: '0.08em',
+                boxShadow: '0 0 30px rgba(0, 255, 102, 0.5)',
               }}
             >
-              <div
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  color: '#ff3344',
-                  fontWeight: 800,
-                  fontSize: '1.1rem',
-                  letterSpacing: '0.08em',
-                  marginBottom: '10px',
-                }}
-              >
-                <ShieldAlert size={22} />
-                <span>{BIRTHDAY_CONFIG.breachWarning}</span>
-              </div>
+              <Play size={18} fill="#00ff66" />
+              <span>[ START GAME ]</span>
+            </button>
 
-              <p
-                style={{
-                  color: '#e2fce8',
-                  fontSize: '1.05rem',
-                  letterSpacing: '0.04em',
-                  margin: '0 auto',
-                  maxWidth: '480px',
-                  fontStyle: 'italic',
-                }}
-              >
-                "{BIRTHDAY_CONFIG.breachMessage}"
-              </p>
+            <div style={{ fontSize: '0.75rem', color: '#5c7866', marginTop: '12px' }}>
+              Tap screen, click, or press Space to flap
             </div>
-          )}
-
-          {/* Action Button */}
-          {isBootComplete && (
-            <div style={{ textAlign: 'center' }}>
-              <button
-                onClick={handleProceed}
-                className="btn-cyber-primary pulse-cyber"
-                style={{
-                  padding: '16px 42px',
-                  fontSize: '1.15rem',
-                  width: '100%',
-                  maxWidth: '380px',
-                }}
-              >
-                <Play size={18} fill="#00ff66" />
-                <span>[ ENTER THE SYSTEM ]</span>
-              </button>
-            </div>
-          )}
+          </div>
         </div>
       </div>
     </div>
   );
 };
-
