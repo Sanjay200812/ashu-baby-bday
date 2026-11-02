@@ -10,7 +10,12 @@ class SoundSystem {
   private ctx: AudioContext | null = null;
   private isMuted: boolean = false;
   private masterGain: GainNode | null = null;
-  private musicAudio: HTMLAudioElement | null = null;
+
+  // Real Dedicated Audio Elements for Site and Flap Game
+  private siteAudio: HTMLAudioElement | null = null;
+  private flapAudio: HTMLAudioElement | null = null;
+  public currentTrack: 'none' | 'site' | 'flap' = 'none';
+
   private synthLoopTimer: number | null = null;
   private isSynthPlaying: boolean = false;
   private synthTime: number = 0;
@@ -23,12 +28,70 @@ class SoundSystem {
   public isMusicPlaying: boolean = false;
   public currentTime: number = 0;
   public duration: number = 0;
-  public volume: number = 0.75;
+  public volume: number = 0.8;
   public hasUserInteracted: boolean = false;
   public isUsingSynthFallback: boolean = false;
 
   constructor() {
-    // Lazy init on first user gesture
+    if (typeof window !== 'undefined') {
+      this.initAudioElements();
+    }
+  }
+
+  private initAudioElements() {
+    if (typeof window === 'undefined') return;
+
+    if (!this.siteAudio) {
+      this.siteAudio = new Audio('/audio/bg-song.mp3');
+      this.siteAudio.loop = true;
+      this.siteAudio.preload = 'auto';
+      this.siteAudio.volume = this.volume;
+
+      this.siteAudio.addEventListener('timeupdate', () => {
+        if (this.currentTrack === 'site' && this.siteAudio) {
+          this.currentTime = this.siteAudio.currentTime;
+          this.duration = this.siteAudio.duration || 0;
+          this.notify();
+        }
+      });
+
+      this.siteAudio.addEventListener('loadedmetadata', () => {
+        if (this.currentTrack === 'site' && this.siteAudio) {
+          this.duration = this.siteAudio.duration || 0;
+          this.notify();
+        }
+      });
+
+      this.siteAudio.addEventListener('error', () => {
+        console.error('siteAudio error:', this.siteAudio?.error);
+      });
+    }
+
+    if (!this.flapAudio) {
+      this.flapAudio = new Audio('/audio/bg-music.mp3');
+      this.flapAudio.loop = true;
+      this.flapAudio.preload = 'auto';
+      this.flapAudio.volume = this.volume;
+
+      this.flapAudio.addEventListener('timeupdate', () => {
+        if (this.currentTrack === 'flap' && this.flapAudio) {
+          this.currentTime = this.flapAudio.currentTime;
+          this.duration = this.flapAudio.duration || 0;
+          this.notify();
+        }
+      });
+
+      this.flapAudio.addEventListener('loadedmetadata', () => {
+        if (this.currentTrack === 'flap' && this.flapAudio) {
+          this.duration = this.flapAudio.duration || 0;
+          this.notify();
+        }
+      });
+
+      this.flapAudio.addEventListener('error', () => {
+        console.error('flapAudio error:', this.flapAudio?.error);
+      });
+    }
   }
 
   private initContext() {
@@ -52,6 +115,7 @@ class SoundSystem {
   public registerUserInteraction() {
     this.hasUserInteracted = true;
     this.initContext();
+    this.initAudioElements();
   }
 
   public subscribe(listener: AudioListener): () => void {
@@ -298,59 +362,98 @@ class SoundSystem {
     }
   }
 
-  // ===================== MUSIC PLAYER =====================
+  // ===================== DUAL-TRACK MUSIC SYSTEM =====================
 
-  public initMusic(songUrl: string) {
-    if (typeof window === 'undefined') return;
+  public playSiteMusic() {
+    this.registerUserInteraction();
+    this.initAudioElements();
 
-    if (!this.musicAudio) {
-      this.musicAudio = new Audio();
-      this.musicAudio.preload = 'metadata';
-      this.musicAudio.volume = this.volume;
-
-      this.musicAudio.addEventListener('timeupdate', () => {
-        if (this.musicAudio && !this.isUsingSynthFallback) {
-          this.currentTime = this.musicAudio.currentTime;
-          this.duration = this.musicAudio.duration || 0;
-          this.notify();
-        }
-      });
-
-      this.musicAudio.addEventListener('ended', () => {
-        if (this.musicAudio) {
-          this.musicAudio.currentTime = 0;
-          this.musicAudio.play().catch(() => {});
-        }
-      });
-
-      this.musicAudio.addEventListener('error', () => {
-        // Fallback to our procedural music box synthesizer if file missing
-        console.info('Audio file not found or inaccessible; enabling procedural music-box melody.');
-        this.isUsingSynthFallback = true;
-        this.duration = this.synthDuration;
-        this.notify();
-      });
-
-      this.musicAudio.addEventListener('loadedmetadata', () => {
-        if (this.musicAudio) {
-          this.duration = this.musicAudio.duration || 0;
-          this.isUsingSynthFallback = false;
-          this.notify();
-        }
-      });
+    // Ensure Flap music is stopped
+    if (this.flapAudio && !this.flapAudio.paused) {
+      this.flapAudio.pause();
     }
 
-    if (songUrl && this.musicAudio.src !== songUrl) {
-      this.musicAudio.src = songUrl;
+    if (!this.siteAudio) return;
+
+    this.currentTrack = 'site';
+    this.isMusicPlaying = true;
+    this.siteAudio.volume = this.isMuted ? 0 : this.volume;
+
+    // Only play if paused so we don't glitch or restart
+    if (this.siteAudio.paused) {
+      const playPromise = this.siteAudio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((err) => {
+          console.warn('siteAudio playback pending user gesture or error:', err);
+        });
+      }
+    }
+    this.notify();
+  }
+
+  public playFlapMusic() {
+    this.registerUserInteraction();
+    this.initAudioElements();
+
+    // Ensure Site music is paused
+    if (this.siteAudio && !this.siteAudio.paused) {
+      this.siteAudio.pause();
+    }
+
+    if (!this.flapAudio) return;
+
+    this.currentTrack = 'flap';
+    this.isMusicPlaying = true;
+    this.flapAudio.volume = this.isMuted ? 0 : this.volume;
+
+    if (this.flapAudio.paused) {
+      const playPromise = this.flapAudio.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((err) => {
+          console.warn('flapAudio playback pending user gesture or error:', err);
+        });
+      }
+    }
+    this.notify();
+  }
+
+  public stopFlapMusicAndResumeSite() {
+    if (this.flapAudio) {
+      this.flapAudio.pause();
+      this.flapAudio.currentTime = 0;
+    }
+    this.playSiteMusic();
+  }
+
+  public playMusic(songUrl?: string) {
+    if (typeof songUrl === 'string' && (songUrl.includes('bg-music') || songUrl.includes('flap'))) {
+      this.playFlapMusic();
+    } else {
+      this.playSiteMusic();
+    }
+  }
+
+  public pauseMusic() {
+    this.isMusicPlaying = false;
+    if (this.siteAudio && !this.siteAudio.paused) {
+      this.siteAudio.pause();
+    }
+    if (this.flapAudio && !this.flapAudio.paused) {
+      this.flapAudio.pause();
+    }
+    this.stopSynthMelody();
+    this.notify();
+  }
+
+  public resumeMusic() {
+    if (this.currentTrack === 'flap') {
+      this.playFlapMusic();
+    } else {
+      this.playSiteMusic();
     }
   }
 
   public togglePlay(songUrl?: string) {
-    this.registerUserInteraction();
-    if (songUrl && !this.musicAudio) {
-      this.initMusic(songUrl);
-    }
-
     if (this.isMusicPlaying) {
       this.pauseMusic();
     } else {
@@ -358,49 +461,11 @@ class SoundSystem {
     }
   }
 
-  public playMusic(songUrl?: string) {
-    this.registerUserInteraction();
-    if (songUrl && (!this.musicAudio || this.musicAudio.src !== songUrl)) {
-      this.initMusic(songUrl);
-    }
-
-    this.isMusicPlaying = true;
-    this.notify();
-
-    if (this.isUsingSynthFallback || !this.musicAudio || !this.musicAudio.src) {
-      this.startSynthMelody();
-      return;
-    }
-
-    this.musicAudio.volume = this.isMuted ? 0 : this.volume;
-    const playPromise = this.musicAudio.play();
-    if (playPromise !== undefined) {
-      playPromise.catch((err) => {
-        console.warn('Audio playback error, falling back to synthesizer:', err);
-        this.isUsingSynthFallback = true;
-        this.duration = this.synthDuration;
-        this.startSynthMelody();
-      });
-    }
-  }
-
-  public pauseMusic() {
-    this.isMusicPlaying = false;
-    if (this.musicAudio && !this.musicAudio.paused) {
-      this.musicAudio.pause();
-    }
-    this.stopSynthMelody();
-    this.notify();
-  }
-
   public seek(timeSeconds: number) {
-    if (this.isUsingSynthFallback) {
-      this.synthTime = Math.max(0, Math.min(timeSeconds, this.synthDuration));
-      this.currentTime = this.synthTime;
-      this.notify();
-    } else if (this.musicAudio && this.musicAudio.duration) {
-      this.musicAudio.currentTime = Math.max(0, Math.min(timeSeconds, this.musicAudio.duration));
-      this.currentTime = this.musicAudio.currentTime;
+    const audio = this.currentTrack === 'flap' ? this.flapAudio : this.siteAudio;
+    if (audio && audio.duration) {
+      audio.currentTime = Math.max(0, Math.min(timeSeconds, audio.duration));
+      this.currentTime = audio.currentTime;
       this.notify();
     }
   }
@@ -410,8 +475,11 @@ class SoundSystem {
     if (this.masterGain && this.ctx) {
       this.masterGain.gain.setValueAtTime(this.isMuted ? 0 : this.volume, this.ctx.currentTime);
     }
-    if (this.musicAudio) {
-      this.musicAudio.volume = this.isMuted ? 0 : this.volume;
+    if (this.siteAudio) {
+      this.siteAudio.volume = this.isMuted ? 0 : this.volume;
+    }
+    if (this.flapAudio) {
+      this.flapAudio.volume = this.isMuted ? 0 : this.volume;
     }
     this.notify();
   }
@@ -422,8 +490,11 @@ class SoundSystem {
     if (this.masterGain && this.ctx) {
       this.masterGain.gain.setValueAtTime(this.isMuted ? 0 : this.volume, this.ctx.currentTime);
     }
-    if (this.musicAudio) {
-      this.musicAudio.muted = this.isMuted;
+    if (this.siteAudio) {
+      this.siteAudio.muted = this.isMuted;
+    }
+    if (this.flapAudio) {
+      this.flapAudio.muted = this.isMuted;
     }
     this.notify();
     return this.isMuted;

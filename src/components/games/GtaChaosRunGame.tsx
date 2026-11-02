@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import confetti from 'canvas-confetti';
-import { ArrowLeft, RotateCcw, Trophy, ArrowUp, ArrowDown, ArrowRight, ArrowLeft as LeftIcon, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, RotateCcw, Trophy, ArrowUp, ArrowDown, ArrowRight, ArrowLeft as LeftIcon, Terminal, ShieldAlert } from 'lucide-react';
 import { BIRTHDAY_CONFIG } from '../../config/birthdayConfig';
 import { soundSystem } from '../../utils/audioSystem';
 
@@ -21,12 +21,17 @@ export const GtaChaosRunGame: React.FC<GtaChaosRunGameProps> = ({ onComplete, on
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [score, setScore] = useState<number>(0);
   const [cashCollected, setCashCollected] = useState<number>(0);
-  const [gameState, setGameState] = useState<'IDLE' | 'PLAYING' | 'GAMEOVER' | 'COMPLETE'>('IDLE');
+  const [gameState, setGameState] = useState<'IDLE' | 'STARTING' | 'PLAYING' | 'GAMEOVER' | 'COMPLETE'>('IDLE');
+  const [countdown, setCountdown] = useState<number>(2);
   const [bestScore, setBestScore] = useState<number>(() => {
-    return parseInt(localStorage.getItem('birthday_gta_best') || '0', 10);
+    try {
+      return parseInt(localStorage.getItem('birthday_gta_best') || '0', 10);
+    } catch {
+      return 0;
+    }
   });
 
-  const TARGET_SCORE = 150;
+  const TARGET_SCORE = 120; // 120 points to complete level
 
   const stateRef = useRef({
     lane: 1, // 0, 1, 2
@@ -37,28 +42,54 @@ export const GtaChaosRunGame: React.FC<GtaChaosRunGameProps> = ({ onComplete, on
     slideTimer: 0,
     score: 0,
     cash: 0,
-    speed: 5.5,
+    speed: 5.2,
     obstacles: [] as RoadObstacle[],
     nextId: 1,
     spawnTimer: 0,
-    gameState: 'IDLE' as 'IDLE' | 'PLAYING' | 'GAMEOVER' | 'COMPLETE',
+    gameState: 'IDLE' as 'IDLE' | 'STARTING' | 'PLAYING' | 'GAMEOVER' | 'COMPLETE',
     faceImage: null as HTMLImageElement | null,
   });
 
+  // Pause music on game over so lose video sound plays clearly
+  useEffect(() => {
+    if (gameState === 'GAMEOVER') {
+      soundSystem.pauseMusic();
+    } else if (gameState === 'PLAYING' || gameState === 'STARTING') {
+      soundSystem.playSiteMusic();
+    }
+  }, [gameState]);
+
   const startGame = () => {
     soundSystem.playClick();
+    soundSystem.playSiteMusic();
     stateRef.current.lane = 1;
     stateRef.current.isJumping = false;
     stateRef.current.jumpY = 0;
     stateRef.current.isSliding = false;
     stateRef.current.score = 0;
     stateRef.current.cash = 0;
-    stateRef.current.speed = 5.5;
+    stateRef.current.speed = 5.2;
     stateRef.current.obstacles = [];
-    stateRef.current.gameState = 'PLAYING';
+    stateRef.current.gameState = 'STARTING';
     setScore(0);
     setCashCollected(0);
-    setGameState('PLAYING');
+    setGameState('STARTING');
+    setCountdown(2);
+
+    // Wait a short moment before the car begins moving
+    const timer = setInterval(() => {
+      setCountdown((c) => {
+        if (c <= 1) {
+          clearInterval(timer);
+          stateRef.current.gameState = 'PLAYING';
+          setGameState('PLAYING');
+          soundSystem.playVictory();
+          return 0;
+        }
+        soundSystem.playClick();
+        return c - 1;
+      });
+    }, 900);
   };
 
   const jump = () => {
@@ -118,253 +149,225 @@ export const GtaChaosRunGame: React.FC<GtaChaosRunGameProps> = ({ onComplete, on
     const height = (canvas.height = 620);
     const laneX = [width * 0.22, width * 0.5, width * 0.78];
 
-    // Load head image
-    const faceImg = new Image();
-    faceImg.src = BIRTHDAY_CONFIG.characterFaceUrl;
-    faceImg.onload = () => {
-      stateRef.current.faceImage = faceImg;
+    // Preload Ashu character face
+    const img = new Image();
+    img.src = BIRTHDAY_CONFIG.characterFaceUrl;
+    img.onload = () => {
+      stateRef.current.faceImage = img;
     };
 
     let animId: number;
+    let roadStripeOffset = 0;
 
     const loop = () => {
-      ctx.clearRect(0, 0, width, height);
+      animId = requestAnimationFrame(loop);
       const s = stateRef.current;
 
-      // 1. Draw City Skyline & Sunset Background
-      ctx.fillStyle = '#0f111f';
+      // Draw highway road (cyber red & black)
+      ctx.fillStyle = '#050508';
       ctx.fillRect(0, 0, width, height);
 
-      // Distant neon skyscrapers
-      ctx.fillStyle = '#1e1a38';
-      ctx.fillRect(30, 80, 50, 160);
-      ctx.fillRect(110, 50, 60, 190);
-      ctx.fillRect(200, 70, 70, 170);
-      ctx.fillRect(300, 40, 55, 200);
+      // Cyber Road Bed
+      ctx.fillStyle = '#0d080c';
+      ctx.fillRect(width * 0.08, 0, width * 0.84, height);
 
-      // Window neon lights
-      ctx.fillStyle = '#ffd700';
-      ctx.globalAlpha = 0.4;
-      for (let y = 100; y < 220; y += 22) {
-        ctx.fillRect(125, y, 6, 8);
-        ctx.fillRect(220, y, 6, 8);
-        ctx.fillRect(320, y, 6, 8);
-      }
-      ctx.globalAlpha = 1.0;
-
-      // 2. Road with perspective
-      const roadTop = 220;
-      ctx.fillStyle = '#1c1d29';
-      ctx.beginPath();
-      ctx.moveTo(width * 0.3, roadTop);
-      ctx.lineTo(width * 0.7, roadTop);
-      ctx.lineTo(width, height);
-      ctx.lineTo(0, height);
-      ctx.closePath();
-      ctx.fill();
-
-      // Road dividing lines
-      ctx.strokeStyle = '#ffd700';
+      // Side Guard Rails
+      ctx.strokeStyle = '#ff2a4b';
       ctx.lineWidth = 3;
-      ctx.setLineDash([20, 15]);
+      ctx.strokeRect(width * 0.08, 0, width * 0.84, height);
+
+      // Road Stripes
+      roadStripeOffset = (roadStripeOffset + (s.gameState === 'PLAYING' ? s.speed : 1.5)) % 40;
+      ctx.strokeStyle = 'rgba(255, 183, 3, 0.4)';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([20, 20]);
+      ctx.lineDashOffset = -roadStripeOffset;
+
+      // Lane dividers
       ctx.beginPath();
-      ctx.moveTo(width * 0.43, roadTop);
+      ctx.moveTo(width * 0.36, 0);
       ctx.lineTo(width * 0.36, height);
-      ctx.moveTo(width * 0.57, roadTop);
+      ctx.moveTo(width * 0.64, 0);
       ctx.lineTo(width * 0.64, height);
       ctx.stroke();
       ctx.setLineDash([]);
 
-      // 3. Logic update when playing
-      if (s.gameState === 'PLAYING') {
-        s.score += 0.2;
-        setScore(Math.floor(s.score));
+      if (s.gameState !== 'PLAYING') {
+        drawCar(ctx, laneX[s.lane], height - 120, s);
+        return;
+      }
 
-        // Gradual speed up
-        s.speed = 5.5 + Math.min(6, s.score * 0.03);
+      // Physics update
+      s.score += 0.25;
+      const curScore = Math.floor(s.score);
+      setScore(curScore);
 
-        // Jump physics
-        if (s.isJumping) {
-          s.jumpY += s.jumpVelocity;
-          s.jumpVelocity += 0.8;
-          if (s.jumpY >= 0) {
-            s.jumpY = 0;
-            s.isJumping = false;
-          }
-        }
-
-        // Slide timer
-        if (s.isSliding) {
-          s.slideTimer--;
-          if (s.slideTimer <= 0) s.isSliding = false;
-        }
-
-        // Spawn obstacles & collectibles
-        s.spawnTimer--;
-        if (s.spawnTimer <= 0) {
-          s.spawnTimer = Math.max(28, 55 - Math.floor(s.score * 0.2));
-          const lane = Math.floor(Math.random() * 3);
-          const rand = Math.random();
-
-          let type: RoadObstacle['type'] = 'car';
-          if (rand < 0.45) type = 'car';
-          else if (rand < 0.65) type = 'barrier';
-          else if (rand < 0.8) type = 'sign';
-          else if (rand < 0.92) type = 'cash';
-          else type = 'gift';
-
-          s.obstacles.push({
-            id: s.nextId++,
-            lane,
-            y: roadTop,
-            type,
-            size: type === 'car' ? 44 : 32,
-          });
-        }
-
-        // Update obstacles & Check Collisions
-        const playerY = height - 120;
-        const playerLaneX = laneX[s.lane];
-
-        for (let i = s.obstacles.length - 1; i >= 0; i--) {
-          const obs = s.obstacles[i];
-          obs.y += s.speed;
-
-          // Check interaction with player
-          if (obs.y >= playerY - 30 && obs.y <= playerY + 40 && obs.lane === s.lane) {
-            if (obs.type === 'cash' || obs.type === 'gift') {
-              // Collected!
-              soundSystem.playScore();
-              const bonus = obs.type === 'gift' ? 30 : 15;
-              s.cash += bonus;
-              s.score += bonus;
-              setCashCollected(s.cash);
-              setScore(Math.floor(s.score));
-
-              if (s.score >= TARGET_SCORE && s.gameState !== 'COMPLETE') {
-                s.gameState = 'COMPLETE';
-                setGameState('COMPLETE');
-                soundSystem.playVictory();
-                confetti({ particleCount: 100, spread: 70 });
-                onComplete(Math.floor(s.score));
-              }
-              s.obstacles.splice(i, 1);
-              continue;
-            } else {
-              // Obstacle!
-              let evaded = false;
-              if (obs.type === 'barrier' && s.isJumping) evaded = true;
-              if (obs.type === 'sign' && s.isSliding) evaded = true;
-
-              if (!evaded) {
-                // Crash!
-                soundSystem.playHit();
-                s.gameState = 'GAMEOVER';
-                setGameState('GAMEOVER');
-
-                const currentBest = parseInt(localStorage.getItem('birthday_gta_best') || '0', 10);
-                if (Math.floor(s.score) > currentBest) {
-                  localStorage.setItem('birthday_gta_best', Math.floor(s.score).toString());
-                  setBestScore(Math.floor(s.score));
-                }
-              }
-            }
-          }
-
-          // Offscreen
-          if (obs.y > height + 60) {
-            s.obstacles.splice(i, 1);
-          }
+      // Jump physics
+      if (s.isJumping) {
+        s.jumpY += s.jumpVelocity;
+        s.jumpVelocity += 0.75;
+        if (s.jumpY >= 0) {
+          s.jumpY = 0;
+          s.isJumping = false;
         }
       }
 
-      // 4. Draw Obstacles & Collectibles
-      s.obstacles.forEach((obs) => {
-        const x = laneX[obs.lane];
-        ctx.save();
-        ctx.translate(x, obs.y);
-
-        if (obs.type === 'car') {
-          // Sports car
-          ctx.fillStyle = '#dc2626';
-          ctx.fillRect(-22, -35, 44, 70);
-          ctx.fillStyle = '#0f172a';
-          ctx.fillRect(-18, -12, 36, 24);
-          // Headlights
-          ctx.fillStyle = '#ffd700';
-          ctx.fillRect(-18, -38, 10, 4);
-          ctx.fillRect(8, -38, 10, 4);
-        } else if (obs.type === 'barrier') {
-          // Roadblock barrier (Jump over!)
-          ctx.fillStyle = '#ea580c';
-          ctx.fillRect(-24, -12, 48, 24);
-          ctx.fillStyle = '#ffffff';
-          ctx.fillRect(-18, -8, 12, 16);
-          ctx.fillRect(6, -8, 12, 16);
-          ctx.font = '10px sans-serif';
-          ctx.fillText('JUMP', -14, 24);
-        } else if (obs.type === 'sign') {
-          // Overhead beam (Slide under!)
-          ctx.fillStyle = '#0284c7';
-          ctx.fillRect(-26, -28, 52, 16);
-          ctx.fillStyle = '#ffffff';
-          ctx.font = 'bold 9px sans-serif';
-          ctx.fillText('SLIDE', -14, -16);
-        } else if (obs.type === 'cash') {
-          ctx.font = '28px serif';
-          ctx.textAlign = 'center';
-          ctx.fillText('💵', 0, 0);
-        } else if (obs.type === 'gift') {
-          ctx.font = '28px serif';
-          ctx.textAlign = 'center';
-          ctx.fillText('🎁', 0, 0);
-        }
-
-        ctx.restore();
-      });
-
-      // 5. Draw Player Character
-      const px = laneX[s.lane];
-      const py = height - 120 + s.jumpY;
-
-      ctx.save();
-      ctx.translate(px, py);
-
+      // Slide physics
       if (s.isSliding) {
-        // Ducking / sliding body
-        ctx.fillStyle = '#dc2626';
-        ctx.fillRect(-20, 10, 40, 20);
-        if (s.faceImage) {
-          ctx.drawImage(s.faceImage, -16, 0, 32, 32);
-        }
-      } else {
-        // Runner body
-        ctx.fillStyle = '#dc2626'; // Red jacket
-        ctx.fillRect(-14, 0, 28, 36);
+        s.slideTimer--;
+        if (s.slideTimer <= 0) s.isSliding = false;
+      }
 
-        // Legs
-        const legOffset = Math.sin(Date.now() * 0.02) * 8;
-        ctx.fillStyle = '#1e293b';
-        ctx.fillRect(-12, 36, 8, 22 + (s.isJumping ? 0 : legOffset));
-        ctx.fillRect(4, 36, 8, 22 - (s.isJumping ? 0 : legOffset));
+      // Obstacle Spawning
+      s.spawnTimer++;
+      if (s.spawnTimer > 45) {
+        s.spawnTimer = 0;
+        const lane = Math.floor(Math.random() * 3);
+        const rand = Math.random();
+        let type: RoadObstacle['type'] = 'car';
+        if (rand < 0.35) type = 'cash';
+        else if (rand < 0.5) type = 'gift';
+        else if (rand < 0.8) type = 'barrier';
+        else type = 'car';
 
-        // Face / Head
-        if (s.faceImage) {
-          ctx.drawImage(s.faceImage, -20, -36, 40, 40);
-        } else {
-          ctx.fillStyle = '#ffd700';
+        s.obstacles.push({
+          id: s.nextId++,
+          lane,
+          y: -40,
+          type,
+          size: type === 'car' ? 50 : 36,
+        });
+      }
+
+      // Obstacles update & collision
+      const playerY = height - 120 + s.jumpY;
+      const playerLane = s.lane;
+
+      for (let i = s.obstacles.length - 1; i >= 0; i--) {
+        const obs = s.obstacles[i];
+        obs.y += s.speed;
+
+        const x = laneX[obs.lane];
+        const y = obs.y;
+
+        // Draw obstacle
+        if (obs.type === 'car') {
+          ctx.fillStyle = '#ff2a4b';
+          ctx.strokeStyle = '#fff';
+          ctx.lineWidth = 2;
           ctx.beginPath();
-          ctx.arc(0, -18, 18, 0, Math.PI * 2);
+          ctx.roundRect(x - 20, y - 25, 40, 50, 6);
           ctx.fill();
+          ctx.stroke();
+          // Headlights
+          ctx.fillStyle = '#ffb703';
+          ctx.fillRect(x - 16, y + 18, 8, 6);
+          ctx.fillRect(x + 8, y + 18, 8, 6);
+        } else if (obs.type === 'barrier') {
+          ctx.fillStyle = '#ffb703';
+          ctx.fillRect(x - 24, y - 10, 48, 20);
+          ctx.strokeStyle = '#000';
+          ctx.strokeRect(x - 24, y - 10, 48, 20);
+        } else if (obs.type === 'cash') {
+          ctx.fillStyle = '#ffb703';
+          ctx.beginPath();
+          ctx.arc(x, y, 14, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#000';
+          ctx.font = '12px monospace';
+          ctx.textAlign = 'center';
+          ctx.fillText('$', x, y + 4);
+        } else if (obs.type === 'gift') {
+          ctx.fillStyle = '#ff2a4b';
+          ctx.fillRect(x - 14, y - 14, 28, 28);
+          ctx.fillStyle = '#ffb703';
+          ctx.fillRect(x - 3, y - 14, 6, 28);
+          ctx.fillRect(x - 14, y - 3, 28, 6);
+        }
+
+        // Collision Check
+        const inPlayerLane = obs.lane === playerLane;
+        const inVerticalRange = Math.abs(y - playerY) < 36;
+
+        if (inPlayerLane && inVerticalRange) {
+          if (obs.type === 'cash' || obs.type === 'gift') {
+            soundSystem.playScore();
+            s.cash += obs.type === 'gift' ? 25 : 10;
+            s.score += obs.type === 'gift' ? 20 : 10;
+            setCashCollected(s.cash);
+            s.obstacles.splice(i, 1);
+            continue;
+          }
+
+          // Barrier jump avoidance
+          if (obs.type === 'barrier' && s.jumpY < -24) {
+            // Jumped over successfully!
+            continue;
+          }
+
+          // CRASH!
+          soundSystem.playHit();
+          s.gameState = 'GAMEOVER';
+          setGameState('GAMEOVER');
+          return;
+        }
+
+        // Remove off-screen
+        if (obs.y > height + 50) {
+          s.obstacles.splice(i, 1);
         }
       }
 
-      ctx.restore();
+      // Check win target
+      if (curScore >= TARGET_SCORE) {
+        s.gameState = 'COMPLETE';
+        setGameState('COMPLETE');
+        soundSystem.playVictory();
+        confetti({
+          particleCount: 160,
+          spread: 90,
+          colors: ['#ff2a4b', '#ffb703', '#ffffff', '#ff1744'],
+        });
+      }
 
-      animId = requestAnimationFrame(loop);
+      // Draw player car
+      drawCar(ctx, laneX[s.lane], playerY, s);
     };
 
-    loop();
+    const drawCar = (c: CanvasRenderingContext2D, x: number, y: number, s: any) => {
+      c.save();
+      // Car chassis
+      c.fillStyle = s.isSliding ? 'rgba(255, 42, 75, 0.4)' : '#16080d';
+      c.strokeStyle = '#ff2a4b';
+      c.lineWidth = 2.5;
+      c.beginPath();
+      c.roundRect(x - 22, y - 30, 44, 60, 8);
+      c.fill();
+      c.stroke();
+
+      // Taillights
+      c.fillStyle = '#ff2a4b';
+      c.fillRect(x - 18, y + 24, 8, 4);
+      c.fillRect(x + 10, y + 24, 8, 4);
+
+      // Ashuu face on windshield
+      const face = s.faceImage;
+      if (face && face.complete) {
+        c.beginPath();
+        c.arc(x, y - 4, 15, 0, Math.PI * 2);
+        c.closePath();
+        c.clip();
+        c.drawImage(face, x - 15, y - 19, 30, 30);
+      } else {
+        c.fillStyle = '#ffb703';
+        c.beginPath();
+        c.arc(x, y - 4, 12, 0, Math.PI * 2);
+        c.fill();
+      }
+      c.restore();
+    };
+
+    animId = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(animId);
   }, []);
 
@@ -379,9 +382,11 @@ export const GtaChaosRunGame: React.FC<GtaChaosRunGameProps> = ({ onComplete, on
         justifyContent: 'center',
         padding: '16px 12px',
         zIndex: 10,
+        fontFamily: 'var(--font-mono)',
+        backgroundColor: '#050508',
       }}
     >
-      {/* Top Header */}
+      {/* Header */}
       <div
         style={{
           width: '100%',
@@ -389,128 +394,210 @@ export const GtaChaosRunGame: React.FC<GtaChaosRunGameProps> = ({ onComplete, on
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          marginBottom: '12px',
+          marginBottom: '10px',
+          padding: '0 4px',
         }}
       >
-        <button
-          onClick={() => {
-            soundSystem.playClick();
-            onBack();
-          }}
-          className="btn-secondary"
-          style={{ padding: '8px 14px', fontSize: '0.85rem' }}
-        >
-          <ArrowLeft size={16} />
-          <span>Arcade</span>
-        </button>
-
-        <div style={{ color: '#ffd700', fontWeight: 800, fontSize: '0.9rem' }}>
-          💵 CASH: ${cashCollected}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <button
+            onClick={() => {
+              soundSystem.playClick();
+              onBack();
+            }}
+            className="btn-cyber-secondary"
+            style={{ padding: '4px 10px', fontSize: '0.72rem' }}
+          >
+            <ArrowLeft size={12} />
+            <span>BACK</span>
+          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#ff2a4b', fontSize: '0.82rem', fontWeight: 800 }}>
+            <Terminal size={15} />
+            <span>LEVEL 2 // CYBER CAR RUN</span>
+          </div>
         </div>
 
-        {bestScore > 0 && (
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              background: 'rgba(255, 215, 0, 0.1)',
-              border: '1px solid rgba(255, 215, 0, 0.3)',
-              padding: '6px 14px',
-              borderRadius: '9999px',
-              fontSize: '0.85rem',
-              fontWeight: 700,
-              color: '#ffd700',
-            }}
-          >
-            <Trophy size={15} />
-            <span>BEST: {bestScore}</span>
-          </div>
-        )}
+        <div style={{ color: '#ffb703', fontSize: '0.8rem', fontWeight: 800 }}>
+          GOAL: {TARGET_SCORE} PTS
+        </div>
       </div>
 
-      {/* Canvas */}
-      <div className="game-canvas-wrapper" style={{ height: '620px' }}>
-        <canvas ref={canvasRef} style={{ width: '100%', height: '100%', display: 'block' }} />
-
-        {/* Live HUD */}
+      {/* Canvas Wrapper */}
+      <div
+        className="game-canvas-wrapper"
+        style={{
+          position: 'relative',
+          maxWidth: '420px',
+          height: '620px',
+          border: '2px solid #ff2a4b',
+          boxShadow: '0 0 35px rgba(255, 42, 75, 0.4)',
+        }}
+      >
+        {/* HUD Overlay */}
         <div
           style={{
             position: 'absolute',
-            top: 16,
-            left: 20,
+            top: '12px',
+            left: '12px',
+            right: '12px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            zIndex: 20,
             pointerEvents: 'none',
           }}
         >
-          <div style={{ fontSize: '2.4rem', fontWeight: 900, color: '#fff', lineHeight: 1 }}>{score}</div>
-          <div style={{ fontSize: '0.75rem', color: '#ffd700', fontWeight: 700 }}>GOAL: {TARGET_SCORE} PTS</div>
+          <div style={{ background: 'rgba(5, 5, 8, 0.9)', border: '1px solid #ff2a4b', padding: '4px 12px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 800, color: '#ffb703' }}>
+            SCORE: {score}
+          </div>
+          <div style={{ background: 'rgba(5, 5, 8, 0.9)', border: '1px solid #ffb703', padding: '4px 12px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 800, color: '#fff' }}>
+            ITEMS: ${cashCollected}
+          </div>
         </div>
 
-        {/* Start Game Modal */}
+        <canvas ref={canvasRef} style={{ width: '100%', height: '100%', display: 'block' }} />
+
+        {/* Short moment countdown before car begins moving */}
+        {gameState === 'STARTING' && (
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              backgroundColor: 'rgba(5, 5, 8, 0.72)',
+              backdropFilter: 'blur(4px)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 32,
+              pointerEvents: 'none',
+              textAlign: 'center',
+            }}
+          >
+            <div
+              style={{
+                fontSize: '0.9rem',
+                fontWeight: 900,
+                color: '#ffb703',
+                letterSpacing: '0.15em',
+                marginBottom: '8px',
+              }}
+            >
+              ENGINE REVVED // GET READY!
+            </div>
+            <div
+              style={{
+                fontSize: '4.5rem',
+                fontWeight: 900,
+                color: '#ff2a4b',
+                textShadow: '0 0 35px rgba(255, 42, 75, 0.8)',
+              }}
+            >
+              {countdown > 0 ? countdown : 'GO!'}
+            </div>
+          </div>
+        )}
+
+        {/* Start Overlay */}
         {gameState === 'IDLE' && (
           <div
             style={{
               position: 'absolute',
               inset: 0,
-              background: 'rgba(10, 11, 20, 0.85)',
-              backdropFilter: 'blur(8px)',
+              backgroundColor: 'rgba(5, 5, 8, 0.94)',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
               padding: '24px',
               textAlign: 'center',
+              zIndex: 30,
             }}
           >
-            <div className="glass-panel" style={{ padding: '32px 24px', maxWidth: '320px', width: '100%' }}>
-              <div style={{ fontSize: '3rem', marginBottom: '8px' }}>🚗</div>
-              <h2 style={{ fontSize: '1.6rem', fontWeight: 900, color: '#dc2626', marginBottom: '8px' }}>
-                GTA Chaos Run
+            <div className="terminal-panel" style={{ padding: '28px 20px', maxWidth: '320px', width: '100%' }}>
+              <div style={{ fontSize: '2.4rem', marginBottom: '8px' }}>🚗⚡</div>
+              <h2 style={{ fontSize: '1.3rem', fontWeight: 900, color: '#ff2a4b', marginBottom: '8px' }}>
+                CYBER CAR RUN
               </h2>
-              <p style={{ fontSize: '0.88rem', color: '#cbd5e1', marginBottom: '24px', lineHeight: 1.5 }}>
-                Dodge sports cars, jump over orange barriers, slide under blue signs, and snatch cash!
+              <p style={{ color: '#cbd5e1', fontSize: '0.84rem', marginBottom: '20px', lineHeight: 1.5 }}>
+                Dodge oncoming cyber traffic and steer left/right! Reach {TARGET_SCORE} points to clear level!
               </p>
-              <button
-                onClick={startGame}
-                className="btn-primary-glow pulse-glow"
-                style={{ width: '100%', padding: '14px', fontSize: '1.1rem', background: '#dc2626' }}
-              >
-                HIT THE GAS
+              <button onClick={startGame} className="btn-cyber-primary pulse-cyber" style={{ width: '100%', padding: '14px' }}>
+                <span>[ START GAME ➔ ]</span>
               </button>
             </div>
           </div>
         )}
 
-        {/* Game Over Modal */}
+        {/* Game Over with lose-clip.mp4 */}
         {gameState === 'GAMEOVER' && (
           <div
             style={{
               position: 'absolute',
               inset: 0,
-              background: 'rgba(10, 11, 20, 0.9)',
-              backdropFilter: 'blur(8px)',
+              backgroundColor: 'rgba(5, 5, 8, 0.94)',
+              backdropFilter: 'blur(10px)',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              padding: '24px',
+              padding: '16px',
+              zIndex: 35,
               textAlign: 'center',
             }}
           >
-            <div className="glass-panel" style={{ padding: '32px 24px', maxWidth: '320px', width: '100%' }}>
-              <h2 style={{ fontSize: '1.8rem', fontWeight: 900, color: '#dc2626', marginBottom: '12px' }}>
-                BUSTED / CRASHED!
-              </h2>
-              <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '16px' }}>
-                Final Score: <strong style={{ color: '#fff' }}>{score}</strong>
+            <div
+              className="terminal-panel"
+              style={{
+                padding: '22px 18px',
+                border: '1.5px solid #ff2a4b',
+                boxShadow: '0 0 40px rgba(255, 42, 75, 0.5)',
+                maxWidth: '340px',
+                width: '100%',
+              }}
+            >
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#ff2a4b', fontWeight: 900, fontSize: '0.9rem', marginBottom: '10px' }}>
+                <ShieldAlert size={16} />
+                <span>CAR CRASHED // LEVEL FAILED!</span>
+              </div>
+
+              {/* Contained Video Clip WITH AUDIO */}
+              <div
+                style={{
+                  position: 'relative',
+                  width: '100%',
+                  borderRadius: '6px',
+                  overflow: 'hidden',
+                  background: '#000',
+                  border: '1px solid rgba(255, 42, 75, 0.6)',
+                  marginBottom: '12px',
+                }}
+              >
+                <video
+                  src={BIRTHDAY_CONFIG.loseClipUrl}
+                  autoPlay
+                  playsInline
+                  loop
+                  style={{
+                    width: '100%',
+                    maxHeight: '180px',
+                    display: 'block',
+                    backgroundColor: '#000',
+                    objectFit: 'contain',
+                  }}
+                />
+              </div>
+
+              <p style={{ color: '#cbd5e1', fontSize: '0.84rem', marginBottom: '14px' }}>
+                Score: {score} • Traffic lo Ashuu car crash aipoindi! 😂 Ready to retry?
               </p>
+
               <button
                 onClick={startGame}
-                className="btn-primary-glow"
-                style={{ width: '100%', padding: '14px', fontSize: '1.05rem', background: '#dc2626' }}
+                className="btn-cyber-primary pulse-cyber"
+                style={{ width: '100%', padding: '12px', fontSize: '0.88rem' }}
               >
-                <RotateCcw size={18} />
-                <span>TRY AGAIN</span>
+                <RotateCcw size={16} />
+                <span>[ RETRY CAR RUN ]</span>
               </button>
             </div>
           </div>
@@ -522,48 +609,34 @@ export const GtaChaosRunGame: React.FC<GtaChaosRunGameProps> = ({ onComplete, on
             style={{
               position: 'absolute',
               inset: 0,
-              background: 'rgba(10, 11, 20, 0.92)',
-              backdropFilter: 'blur(10px)',
+              backgroundColor: 'rgba(5, 5, 8, 0.94)',
+              backdropFilter: 'blur(8px)',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
               padding: '24px',
+              zIndex: 35,
               textAlign: 'center',
             }}
           >
-            <div className="glass-panel" style={{ padding: '36px 24px', maxWidth: '340px', width: '100%' }}>
-              <div
-                style={{
-                  width: '60px',
-                  height: '60px',
-                  borderRadius: '50%',
-                  background: 'rgba(220, 38, 38, 0.2)',
-                  border: '2px solid #dc2626',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  margin: '0 auto 16px',
-                }}
-              >
-                <CheckCircle2 size={32} color="#dc2626" />
-              </div>
-              <h2 className="gold-text-shimmer" style={{ fontSize: '1.7rem', fontWeight: 900, marginBottom: '8px' }}>
-                City Legend!
+            <div className="terminal-panel" style={{ padding: '28px 20px', maxWidth: '340px', width: '100%', border: '1.5px solid #ffb703' }}>
+              <div style={{ fontSize: '2.4rem', marginBottom: '8px' }}>🚗🏆</div>
+              <h2 style={{ fontSize: '1.3rem', fontWeight: 900, color: '#ffb703', marginBottom: '6px' }}>
+                HIGHWAY CLEARED!
               </h2>
-              <p style={{ color: '#cbd5e1', fontSize: '0.9rem', marginBottom: '24px' }}>
-                Escaped the heat and earned the birthday bag! Score:{' '}
-                <strong style={{ color: '#ffd700' }}>{score}</strong>.
+              <p style={{ color: '#cbd5e1', fontSize: '0.86rem', marginBottom: '20px' }}>
+                Los Santos traffic ni daati Ashuu racer pro status techukunnadu! Score: {score}.
               </p>
               <button
                 onClick={() => {
                   soundSystem.playClick();
-                  onBack();
+                  onComplete(score);
                 }}
-                className="btn-primary-glow pulse-glow"
-                style={{ width: '100%', padding: '14px', fontSize: '1.05rem', marginBottom: '10px' }}
+                className="btn-cyber-primary"
+                style={{ width: '100%', padding: '14px' }}
               >
-                BACK TO ARCADE
+                <span>[ PROCEED TO NEXT LEVEL ➔ ]</span>
               </button>
             </div>
           </div>
@@ -574,25 +647,25 @@ export const GtaChaosRunGame: React.FC<GtaChaosRunGameProps> = ({ onComplete, on
       <div
         style={{
           display: 'flex',
-          gap: '12px',
-          marginTop: '14px',
+          gap: '10px',
+          marginTop: '12px',
           width: '100%',
           maxWidth: '420px',
           justifyContent: 'center',
         }}
       >
-        <button onClick={moveLeft} className="btn-secondary" style={{ padding: '12px 18px' }}>
+        <button onClick={moveLeft} className="btn-cyber-secondary" style={{ padding: '10px 16px' }}>
           <LeftIcon size={18} />
         </button>
-        <button onClick={jump} className="btn-secondary" style={{ padding: '12px 22px', color: '#ffd700' }}>
+        <button onClick={jump} className="btn-cyber-secondary" style={{ padding: '10px 20px', color: '#ffb703' }}>
           <ArrowUp size={18} />
           <span>JUMP</span>
         </button>
-        <button onClick={slide} className="btn-secondary" style={{ padding: '12px 22px', color: '#38bdf8' }}>
+        <button onClick={slide} className="btn-cyber-secondary" style={{ padding: '10px 20px', color: '#ff2a4b' }}>
           <ArrowDown size={18} />
           <span>SLIDE</span>
         </button>
-        <button onClick={moveRight} className="btn-secondary" style={{ padding: '12px 18px' }}>
+        <button onClick={moveRight} className="btn-cyber-secondary" style={{ padding: '10px 16px' }}>
           <ArrowRight size={18} />
         </button>
       </div>
@@ -600,3 +673,4 @@ export const GtaChaosRunGame: React.FC<GtaChaosRunGameProps> = ({ onComplete, on
   );
 };
 
+export default GtaChaosRunGame;

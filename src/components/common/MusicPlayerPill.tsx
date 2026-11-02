@@ -1,5 +1,5 @@
 import React from 'react';
-import { Volume2, VolumeX, Music, Terminal } from 'lucide-react';
+import { Volume2, VolumeX, Music } from 'lucide-react';
 import { useAudio } from '../../utils/useAudio';
 import { BIRTHDAY_CONFIG } from '../../config/birthdayConfig';
 
@@ -7,7 +7,7 @@ interface MusicPlayerPillProps {
   onOpenCli?: () => void;
 }
 
-export const MusicPlayerPill: React.FC<MusicPlayerPillProps> = ({ onOpenCli }) => {
+export const MusicPlayerPill: React.FC<MusicPlayerPillProps> = () => {
   const { isPlaying, isMuted, togglePlay, toggleMute } = useAudio();
 
   const handleToggle = (e: React.MouseEvent) => {
@@ -30,45 +30,29 @@ export const MusicPlayerPill: React.FC<MusicPlayerPillProps> = ({ onOpenCli }) =
         gap: '8px',
       }}
     >
-      {onOpenCli && (
-        <button
-          onClick={onOpenCli}
-          className="btn-cyber-secondary"
-          style={{ padding: '6px 12px', fontSize: '0.78rem' }}
-          title="Open Hidden Command Terminal"
-        >
-          <Terminal size={14} color="#00ff66" />
-          <span>[ CLI ]</span>
-        </button>
-      )}
-
       <button
         onClick={handleToggle}
         className="btn-cyber-secondary"
         style={{
           padding: '6px 14px',
           fontSize: '0.78rem',
-          borderColor: isPlaying ? '#00ff66' : 'rgba(255,255,255,0.2)',
-          color: isPlaying ? '#00ff66' : '#cbd5e1',
+          borderColor: isPlaying ? '#ff2a4b' : 'rgba(255, 42, 75, 0.4)',
+          color: isPlaying ? '#fff' : '#cbd5e1',
+          background: 'rgba(5, 5, 8, 0.85)',
+          backdropFilter: 'blur(8px)',
         }}
         aria-label="Toggle Audio"
       >
-        <div className={`equalizer-bars ${!isPlaying || isMuted ? 'equalizer-paused' : ''}`}>
-          <div className="eq-bar" style={{ background: '#00ff66' }} />
-          <div className="eq-bar" style={{ background: '#00e5ff' }} />
-          <div className="eq-bar" style={{ background: '#00ff66' }} />
-        </div>
-
-        <span>{isPlaying ? (isMuted ? 'AUDIO:MUTED' : 'AUDIO:ON') : 'AUDIO:OFF'}</span>
+        <span>{isPlaying ? (isMuted ? 'AUDIO: MUTED' : 'AUDIO: PLAYING') : 'AUDIO: OFF'}</span>
 
         {isPlaying ? (
           isMuted ? (
-            <VolumeX size={14} color="#ff3344" />
+            <VolumeX size={14} color="#ff2a4b" />
           ) : (
-            <Volume2 size={14} color="#00ff66" />
+            <Volume2 size={14} color="#ffb703" />
           )
         ) : (
-          <Music size={14} />
+          <Music size={14} color="#ff2a4b" />
         )}
       </button>
     </div>

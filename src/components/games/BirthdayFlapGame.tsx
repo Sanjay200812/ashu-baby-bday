@@ -1,14 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Phaser from 'phaser';
 import confetti from 'canvas-confetti';
-import { RotateCcw, Trophy, Terminal, Volume2, VolumeX, ShieldAlert } from 'lucide-react';
+import { RotateCcw, Trophy, Terminal, ShieldAlert } from 'lucide-react';
 import { BIRTHDAY_CONFIG } from '../../config/birthdayConfig';
 import { soundSystem } from '../../utils/audioSystem';
+import { ControlInstructionModal } from '../common/ControlInstructionModal';
 
 interface BirthdayFlapGameProps {
   onLevelComplete: (score: number) => void;
-  onBackToArcade?: () => void;
-  isUnlockedInArcade?: boolean;
+  onBack?: () => void;
 }
 
 interface CpuObstacleData {
@@ -17,19 +17,21 @@ interface CpuObstacleData {
   topHeight: number;
   bottomY: number;
   gap: number;
+  baseCenterY: number;
+  isMoving: boolean;
+  moveSpeed: number;
+  moveAmplitude: number;
+  movePhase: number;
   hasPassed: boolean;
   graphics: Phaser.GameObjects.Graphics;
 }
 
-export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({
-  onLevelComplete,
-  onBackToArcade,
-  isUnlockedInArcade = false,
-}) => {
+export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({ onLevelComplete, onBack }) => {
   const gameContainerRef = useRef<HTMLDivElement>(null);
   const phaserGameRef = useRef<Phaser.Game | null>(null);
-  const bgAudioRef = useRef<HTMLAudioElement | null>(null);
+  const loseVideoRef = useRef<HTMLVideoElement | null>(null);
 
+  const [showInstructions, setShowInstructions] = useState<boolean>(true);
   const [remainingPasses, setRemainingPasses] = useState<number>(12);
   const [bestScore, setBestScore] = useState<number>(() => {
     try {
@@ -39,51 +41,24 @@ export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({
     }
   });
   const [gameState, setGameState] = useState<'IDLE' | 'PLAYING' | 'GAMEOVER' | 'COMPLETE'>('IDLE');
-  const [isMuted, setIsMuted] = useState<boolean>(soundSystem.getIsMuted());
 
-  // 1. Synchronized Background Music
+  // When lose clip plays, pause background music so video sound is clear; resume on retry
+  // Uses bg-music.mp3 ONLY for Game 1 (Flap Protocol)
   useEffect(() => {
-    const audio = new Audio(BIRTHDAY_CONFIG.gameBgMusicUrl);
-    audio.loop = true;
-    audio.volume = isMuted ? 0 : 0.55;
-    bgAudioRef.current = audio;
-
-    return () => {
-      audio.pause();
-      audio.currentTime = 0;
-      bgAudioRef.current = null;
-    };
-  }, []);
-
-  // Update volume when mute toggles
-  useEffect(() => {
-    if (bgAudioRef.current) {
-      bgAudioRef.current.volume = isMuted ? 0 : 0.55;
-    }
-  }, [isMuted]);
-
-  // Play only while actively in PLAYING state
-  useEffect(() => {
-    if (gameState === 'PLAYING') {
-      soundSystem.registerUserInteraction();
-      bgAudioRef.current?.play().catch(() => {});
-    } else {
-      bgAudioRef.current?.pause();
-      if (gameState === 'IDLE' && bgAudioRef.current) {
-        bgAudioRef.current.currentTime = 0;
-      }
+    if (gameState === 'GAMEOVER') {
+      soundSystem.pauseMusic();
+    } else if (gameState === 'PLAYING') {
+      soundSystem.playFlapMusic();
     }
   }, [gameState]);
 
-  const handleToggleSound = () => {
-    const muted = soundSystem.toggleMute();
-    setIsMuted(muted);
-    if (bgAudioRef.current) {
-      bgAudioRef.current.volume = muted ? 0 : 0.55;
-    }
-  };
+  // When exiting Flap Game, stop bg-music.mp3 and resume bg-song.mp3
+  useEffect(() => {
+    return () => {
+      soundSystem.stopFlapMusicAndResumeSite();
+    };
+  }, []);
 
-  // 2. Phaser Game Instance with Precision Geometry Engine
   useEffect(() => {
     if (!gameContainerRef.current) return;
 
@@ -92,11 +67,11 @@ export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({
     }
 
     const GAME_WIDTH = 420;
-    const GAME_HEIGHT = 640;
-    const GROUND_HEIGHT = 70;
+    const GAME_HEIGHT = 620;
+    const GROUND_HEIGHT = 65;
     const OBSTACLE_WIDTH = 64;
-    const GAP_SIZE = 180; // Generous, fair, clear gap
-    const PLAYER_RADIUS = 16; // Precision collision radius around Ashu's face
+    const GAP_SIZE = 190; // Fair, generous, reachable gap
+    const PLAYER_RADIUS = 16;
 
     class CyberFlapScene extends Phaser.Scene {
       private playerContainer!: Phaser.GameObjects.Container;
@@ -106,17 +81,17 @@ export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({
 
       private obstacles: CpuObstacleData[] = [];
       private passedCount: number = 0;
-      private localBest: number = 0;
       private currentSceneState: 'IDLE' | 'PLAYING' | 'GAMEOVER' | 'COMPLETE' = 'IDLE';
       private spawnTimer: number = 0;
-      private SPAWN_INTERVAL: number = 1900; // Milliseconds between CPU obstacles
+      private SPAWN_INTERVAL: number = 1900;
+      private gapTierCounter: number = 0;
+      private localBest: number = 0;
 
       constructor() {
         super({ key: 'CyberFlapScene' });
       }
 
       preload() {
-        // Load clean character face image without visor
         this.load.image('characterFace', BIRTHDAY_CONFIG.characterFaceUrl);
       }
 
@@ -126,36 +101,22 @@ export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({
         this.spawnTimer = 0;
         this.currentSceneState = 'IDLE';
 
-        try {
-          this.localBest = parseInt(localStorage.getItem('birthday_flap_best') || '0', 10);
-        } catch {
-          this.localBest = 0;
-        }
-
-        // A. Background: Cyber Dark Grid
+        // Background
         const bg = this.add.graphics();
-        bg.fillGradientStyle(0x040609, 0x040609, 0x081018, 0x081018, 1);
+        bg.fillGradientStyle(0x050508, 0x050508, 0x14080c, 0x14080c, 1);
         bg.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
 
-        // Neon grid lines
-        const grid = this.add.graphics();
-        grid.lineStyle(1, 0x00ff66, 0.08);
-        for (let x = 0; x < GAME_WIDTH; x += 30) {
-          grid.lineBetween(x, 0, x, GAME_HEIGHT);
-        }
-        for (let y = 0; y < GAME_HEIGHT; y += 30) {
-          grid.lineBetween(0, y, GAME_WIDTH, y);
-        }
-
-        // B. Ground Layer
+        // Ground Layer
         const groundG = this.make.graphics({ x: 0, y: 0 });
-        groundG.fillStyle(0x060a0f, 1);
+        groundG.fillStyle(0x0c0608, 1);
         groundG.fillRect(0, 0, 40, GROUND_HEIGHT);
-        groundG.lineStyle(2, 0x00ff66, 0.9);
+        groundG.lineStyle(2, 0xff2a4b, 0.95);
         groundG.lineBetween(0, 2, 40, 2);
-        groundG.lineStyle(1, 0x00e5ff, 0.4);
+        groundG.lineStyle(1, 0xffb703, 0.4);
         groundG.lineBetween(20, 2, 20, GROUND_HEIGHT);
-        groundG.generateTexture('cyberGroundTexture', 40, GROUND_HEIGHT);
+        if (!this.textures.exists('cyberGroundTexture')) {
+          groundG.generateTexture('cyberGroundTexture', 40, GROUND_HEIGHT);
+        }
         groundG.destroy();
 
         this.gridFloor = this.add.tileSprite(
@@ -167,11 +128,13 @@ export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({
         );
         this.gridFloor.setOrigin(0, 0);
 
-        // C. Particles for Successful Passes
+        // Particles
         const spark = this.make.graphics({ x: 0, y: 0 });
-        spark.fillStyle(0x00ff66, 1);
+        spark.fillStyle(0xff2a4b, 1);
         spark.fillCircle(3, 3, 3);
-        spark.generateTexture('sparkleTexture', 6, 6);
+        if (!this.textures.exists('sparkleTexture')) {
+          spark.generateTexture('sparkleTexture', 6, 6);
+        }
         spark.destroy();
 
         this.scoreEmitter = this.add.particles(0, 0, 'sparkleTexture', {
@@ -182,10 +145,9 @@ export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({
           emitting: false,
         });
 
-        // D. Build Clean Character (NO green marks over face)
         this.buildPlayer();
 
-        // E. Touch & Keyboard Controls
+        // Controls
         this.input.on('pointerdown', () => this.handleJump());
         this.input.keyboard?.on('keydown-SPACE', () => this.handleJump());
       }
@@ -199,17 +161,14 @@ export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({
         this.playerBody.setCollideWorldBounds(false);
         this.playerBody.allowGravity = false;
 
-        // Subtle Cyan/Green Energy Thruster & Halo behind head
-        const halo = this.add.circle(0, 0, 22, 0x00e5ff, 0.25);
-        const thruster = this.add.rectangle(-16, 6, 10, 16, 0x00ff66, 0.8);
+        const halo = this.add.circle(0, 0, 22, 0xff2a4b, 0.25);
+        const thruster = this.add.rectangle(-16, 6, 10, 16, 0xffb703, 0.85);
         this.playerContainer.add([halo, thruster]);
 
-        // Clean Character Face (properly sized, oriented, NO marks over face)
         const face = this.add.image(0, 0, 'characterFace');
         face.setDisplaySize(42, 42);
         this.playerContainer.add(face);
 
-        // Idle floating tween
         this.tweens.add({
           targets: this.playerContainer,
           y: (GAME_HEIGHT - GROUND_HEIGHT) / 2 - 16,
@@ -226,13 +185,13 @@ export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({
           setGameState('PLAYING');
           this.tweens.killTweensOf(this.playerContainer);
           this.playerBody.allowGravity = true;
-          this.playerBody.setGravityY(820);
+          this.playerBody.setGravityY(920);
         }
 
         if (this.currentSceneState !== 'PLAYING') return;
 
         soundSystem.playJump();
-        this.playerBody.setVelocityY(-305);
+        this.playerBody.setVelocityY(-315);
 
         this.tweens.killTweensOf(this.playerContainer);
         this.tweens.add({
@@ -243,13 +202,32 @@ export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({
         });
       }
 
+      // Vary obstacle gaps cleanly between upper, middle, and lower positions!
       spawnCpuObstaclePair() {
-        // Vary topHeight randomly while guaranteeing reachable, fair, clear gap
-        const minTop = 80;
-        const maxTop = GAME_HEIGHT - GROUND_HEIGHT - GAP_SIZE - 70; // 570 - 180 - 70 = 320
-        const topHeight = Phaser.Math.Between(minTop, maxTop);
+        this.gapTierCounter++;
+        let topHeight: number;
+
+        // Clean rotation across 3 positions: Upper, Middle, Lower
+        const tier = this.gapTierCounter % 3;
+        if (tier === 0) {
+          // Upper gap (character flies high)
+          topHeight = Phaser.Math.Between(90, 140);
+        } else if (tier === 1) {
+          // Middle gap (character flies center)
+          topHeight = Phaser.Math.Between(180, 240);
+        } else {
+          // Lower gap (character flies lower)
+          topHeight = Phaser.Math.Between(270, 320);
+        }
+
         const bottomY = topHeight + GAP_SIZE;
         const bottomHeight = GAME_HEIGHT - GROUND_HEIGHT - bottomY;
+
+        const isMoving = this.gapTierCounter > 2 && (this.gapTierCounter % 2 === 0);
+        const baseCenterY = topHeight + GAP_SIZE / 2;
+        const moveSpeed = 0.0024;
+        const moveAmplitude = 24; // Fair, slight up and down oscillation to challenge player
+        const movePhase = Phaser.Math.FloatBetween(0, Math.PI * 2);
 
         const g = this.add.graphics();
         this.drawCpuPair(g, GAME_WIDTH + 20, topHeight, bottomY, bottomHeight);
@@ -260,152 +238,129 @@ export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({
           topHeight,
           bottomY,
           gap: GAP_SIZE,
+          baseCenterY,
+          isMoving,
+          moveSpeed,
+          moveAmplitude,
+          movePhase,
           hasPassed: false,
           graphics: g,
         });
       }
 
-      // Draw beautifully rendered CPU-themed obstacles
       drawCpuPair(g: Phaser.GameObjects.Graphics, x: number, topH: number, bottomY: number, bottomH: number) {
         g.clear();
 
-        // 1. TOP CPU TOWER (Motherboard/Heatsink descending from top)
-        // Main Silicon Body
-        g.fillStyle(0x060c14, 1);
+        // TOP CPU TOWER
+        g.fillStyle(0x140a0e, 1);
         g.fillRect(x, 0, OBSTACLE_WIDTH, topH);
-
-        // Border & Bus Tracks
-        g.lineStyle(2, 0x00ff66, 0.85);
+        g.lineStyle(2, 0xff2a4b, 0.9);
         g.strokeRect(x, 0, OBSTACLE_WIDTH, topH);
 
-        // Circuit Traces inside Top Body
-        g.lineStyle(1, 0x00e5ff, 0.6);
-        g.lineBetween(x + 16, 0, x + 16, topH - 18);
-        g.lineBetween(x + 32, 0, x + 32, topH - 24);
-        g.lineBetween(x + 48, 0, x + 48, topH - 18);
-
-        // Golden CPU Microchip Socket facing the gap
-        g.fillStyle(0x1a2634, 1);
-        g.fillRect(x + 4, topH - 16, OBSTACLE_WIDTH - 8, 16);
-        g.lineStyle(2, 0xffd700, 1);
-        g.strokeRect(x + 4, topH - 16, OBSTACLE_WIDTH - 8, 16);
-
-        // Golden Processor Pins along the gap edge
-        g.fillStyle(0xffd700, 1);
-        for (let p = x + 8; p < x + OBSTACLE_WIDTH - 8; p += 8) {
-          g.fillRect(p, topH - 3, 4, 3);
+        for (let fy = 10; fy < topH - 24; fy += 14) {
+          g.fillStyle(0x240f16, 0.9);
+          g.fillRect(x + 4, fy, OBSTACLE_WIDTH - 8, 8);
         }
 
-        // Glowing Core LED on Top Chip
-        g.fillStyle(0x00ff66, 1);
-        g.fillCircle(x + OBSTACLE_WIDTH / 2, topH - 8, 3);
+        g.fillStyle(0x2a0812, 1);
+        g.fillRect(x - 3, topH - 24, OBSTACLE_WIDTH + 6, 24);
+        g.lineStyle(2, 0xffb703, 0.95);
+        g.strokeRect(x - 3, topH - 24, OBSTACLE_WIDTH + 6, 24);
 
-        // 2. BOTTOM CPU TOWER (Server Mainframe rising from ground)
-        // Main Silicon Body
-        g.fillStyle(0x060c14, 1);
+        g.fillStyle(0xffb703, 1);
+        for (let p = 0; p < OBSTACLE_WIDTH; p += 10) {
+          g.fillRect(x + p + 2, topH - 4, 5, 4);
+        }
+
+        // BOTTOM CPU TOWER
+        g.fillStyle(0x140a0e, 1);
         g.fillRect(x, bottomY, OBSTACLE_WIDTH, bottomH);
-
-        // Border
-        g.lineStyle(2, 0x00e5ff, 0.85);
+        g.lineStyle(2, 0xff2a4b, 0.9);
         g.strokeRect(x, bottomY, OBSTACLE_WIDTH, bottomH);
 
-        // Circuit Traces inside Bottom Body
-        g.lineStyle(1, 0x00ff66, 0.6);
-        g.lineBetween(x + 16, bottomY + 18, x + 16, bottomY + bottomH);
-        g.lineBetween(x + 32, bottomY + 24, x + 32, bottomY + bottomH);
-        g.lineBetween(x + 48, bottomY + 18, x + 48, bottomY + bottomH);
+        g.fillStyle(0x2a0812, 1);
+        g.fillRect(x - 3, bottomY, OBSTACLE_WIDTH + 6, 24);
+        g.lineStyle(2, 0xffb703, 0.95);
+        g.strokeRect(x - 3, bottomY, OBSTACLE_WIDTH + 6, 24);
 
-        // Golden CPU Microchip Socket facing the gap
-        g.fillStyle(0x1a2634, 1);
-        g.fillRect(x + 4, bottomY, OBSTACLE_WIDTH - 8, 16);
-        g.lineStyle(2, 0xffd700, 1);
-        g.strokeRect(x + 4, bottomY, OBSTACLE_WIDTH - 8, 16);
-
-        // Golden Processor Pins along the gap edge
-        g.fillStyle(0xffd700, 1);
-        for (let p = x + 8; p < x + OBSTACLE_WIDTH - 8; p += 8) {
-          g.fillRect(p, bottomY, 4, 3);
+        g.fillStyle(0xffb703, 1);
+        for (let p = 0; p < OBSTACLE_WIDTH; p += 10) {
+          g.fillRect(x + p + 2, bottomY, 5, 4);
         }
 
-        // Glowing Core LED on Bottom Chip
-        g.fillStyle(0x00e5ff, 1);
-        g.fillCircle(x + OBSTACLE_WIDTH / 2, bottomY + 8, 3);
+        for (let fy = bottomY + 30; fy < bottomY + bottomH - 10; fy += 14) {
+          g.fillStyle(0x240f16, 0.9);
+          g.fillRect(x + 4, fy, OBSTACLE_WIDTH - 8, 8);
+        }
       }
 
       update(time: number, delta: number) {
         if (this.currentSceneState !== 'PLAYING') return;
 
-        // Ground scroll
-        this.gridFloor.tilePositionX += 2.4;
+        this.gridFloor.tilePositionX += 2.2;
 
-        // Player tilt on fall
-        if (this.playerBody.velocity.y > 60) {
-          this.playerContainer.angle = Math.min(60, this.playerContainer.angle + 2.2);
+        if (this.playerBody.velocity.y > 0) {
+          this.playerContainer.angle = Math.min(65, this.playerContainer.angle + 2.2);
         }
 
-        // Spawn timer
+        const playerX = this.playerContainer.x;
+        const playerY = this.playerContainer.y;
+
+        // Ground Collision
+        if (playerY + PLAYER_RADIUS >= GAME_HEIGHT - GROUND_HEIGHT) {
+          this.triggerGameOver();
+          return;
+        }
+
+        // Ceiling collision
+        if (playerY - PLAYER_RADIUS <= 0) {
+          this.playerContainer.y = PLAYER_RADIUS;
+          this.playerBody.setVelocityY(0);
+        }
+
         this.spawnTimer += delta;
         if (this.spawnTimer >= this.SPAWN_INTERVAL) {
           this.spawnTimer = 0;
           this.spawnCpuObstaclePair();
         }
 
-        const SPEED = 145; // Smooth, fair horizontal speed
-        const moveDist = SPEED * (delta / 1000);
-
-        const playerX = this.playerContainer.x;
-        const playerY = this.playerContainer.y;
-        const groundY = GAME_HEIGHT - GROUND_HEIGHT;
-
-        // A. Ceiling & Ground Collisions
-        if (playerY - PLAYER_RADIUS <= 0) {
-          this.playerContainer.y = PLAYER_RADIUS;
-          this.playerBody.setVelocityY(0);
-        }
-
-        if (playerY + PLAYER_RADIUS >= groundY) {
-          this.triggerGameOver();
-          return;
-        }
-
-        // B. Obstacles Movement, Pixel-Perfect Collision & Pass Detection
+        const SPEED = 2.4;
         for (let i = this.obstacles.length - 1; i >= 0; i--) {
           const obs = this.obstacles[i];
-          obs.x -= moveDist;
+          obs.x -= SPEED;
 
-          // Redraw graphics at new x position
-          const bottomH = groundY - obs.bottomY;
-          this.drawCpuPair(obs.graphics, obs.x, obs.topHeight, obs.bottomY, bottomH);
+          // Slight up-and-down oscillation on moving obstacles
+          if (obs.isMoving) {
+            const dy = Math.sin(time * obs.moveSpeed + obs.movePhase) * obs.moveAmplitude;
+            const currentCenterY = obs.baseCenterY + dy;
+            obs.topHeight = Math.max(70, Math.min(GAME_HEIGHT - GROUND_HEIGHT - obs.gap - 70, currentCenterY - obs.gap / 2));
+            obs.bottomY = obs.topHeight + obs.gap;
+          }
 
-          // 1. COLLISION DETECTION: Strict & Mathematically Exact
-          // Is player horizontally within the obstacle tower width?
+          const bottomHeight = GAME_HEIGHT - GROUND_HEIGHT - obs.bottomY;
+          this.drawCpuPair(obs.graphics, obs.x, obs.topHeight, obs.bottomY, bottomHeight);
+
+          // EXACT COLLISION: Only triggers on real obstacle collision
           const isHorizontallyOverlapping =
             playerX + PLAYER_RADIUS > obs.x && playerX - PLAYER_RADIUS < obs.x + obs.width;
 
           if (isHorizontallyOverlapping) {
-            // Did player touch the top CPU obstacle?
             if (playerY - PLAYER_RADIUS < obs.topHeight) {
               this.triggerGameOver();
               return;
             }
-
-            // Did player touch the bottom CPU obstacle?
             if (playerY + PLAYER_RADIUS > obs.bottomY) {
               this.triggerGameOver();
               return;
             }
-
-            // OTHERWISE: Player is strictly inside the gap!
-            // Passing through the gap will NEVER trigger game over!
           }
 
-          // 2. PASS DETECTION: Count pass only when safely cleared the obstacle horizontally
+          // PASS DETECTION
           if (!obs.hasPassed && playerX - PLAYER_RADIUS > obs.x + obs.width) {
             obs.hasPassed = true;
             this.handleSuccessfulPass();
           }
 
-          // Cleanup offscreen obstacles
           if (obs.x < -OBSTACLE_WIDTH - 20) {
             obs.graphics.destroy();
             this.obstacles.splice(i, 1);
@@ -431,7 +386,6 @@ export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({
           }
         }
 
-        // Win Condition: 12 passes in a single run
         if (this.passedCount >= 12 && this.currentSceneState !== 'COMPLETE') {
           this.triggerLevelComplete();
         }
@@ -458,26 +412,47 @@ export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({
           particleCount: 160,
           spread: 90,
           origin: { y: 0.5 },
-          colors: ['#00ff66', '#00e5ff', '#ffd700', '#ffffff'],
+          colors: ['#ff2a4b', '#ffb703', '#ffffff', '#ff1744'],
         });
 
-        // Open original birthday website immediately without lose clip
         setTimeout(() => {
           onLevelComplete(12);
         }, 1200);
       }
 
       restartGame() {
-        // Destroy existing graphics
-        this.obstacles.forEach((obs) => obs.graphics.destroy());
+        // Destroy existing obstacle graphics
+        this.obstacles.forEach((obs) => {
+          if (obs.graphics) obs.graphics.destroy();
+        });
         this.obstacles = [];
         this.passedCount = 0;
         this.spawnTimer = 0;
+        this.gapTierCounter = 0;
         setRemainingPasses(12);
 
-        this.scene.restart();
+        // Reset player in-place without restarting scene or reloading
+        this.tweens.killTweensOf(this.playerContainer);
+        this.playerContainer.setPosition(100, (GAME_HEIGHT - GROUND_HEIGHT) / 2);
+        this.playerContainer.angle = 0;
+        if (this.playerBody) {
+          this.playerBody.setVelocity(0, 0);
+          this.playerBody.allowGravity = false;
+        }
+
+        // Restart idle bobbing tween
+        this.tweens.add({
+          targets: this.playerContainer,
+          y: (GAME_HEIGHT - GROUND_HEIGHT) / 2 - 16,
+          duration: 800,
+          yoyo: true,
+          repeat: -1,
+          ease: 'Sine.easeInOut',
+        });
+
         this.currentSceneState = 'IDLE';
         setGameState('IDLE');
+        soundSystem.playMusic(BIRTHDAY_CONFIG.gameBgMusicUrl);
       }
     }
 
@@ -486,16 +461,19 @@ export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({
       parent: gameContainerRef.current,
       width: GAME_WIDTH,
       height: GAME_HEIGHT,
-      backgroundColor: '#040609',
+      transparent: true,
       physics: {
         default: 'arcade',
-        arcade: { debug: false },
+        arcade: {
+          gravity: { x: 0, y: 0 },
+          debug: false,
+        },
       },
+      scene: [CyberFlapScene],
       scale: {
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH,
       },
-      scene: [CyberFlapScene],
     };
 
     const game = new Phaser.Game(config);
@@ -531,7 +509,21 @@ export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({
         fontFamily: 'var(--font-mono)',
       }}
     >
-      {/* Top Header: Protocol, Record, and Sound Toggle */}
+      {/* Control Instruction Modal in Tenglish */}
+      {showInstructions && (
+        <ControlInstructionModal
+          levelNumber={1}
+          levelTitle="FLAP PROTOCOL // CPU GATE"
+          objective="Ashuu face tho 12 CPU gaps cross chey! Touch aithe out!"
+          desktopControls="SPACEBAR or MOUSE CLICK tho jump chey."
+          mobileControls="Screen meedha TAP chey to fly."
+          tip="Gaps upper, middle, lower vary avthuntai. Steady rhythm maintain chey!"
+          badgeIcon="🦅"
+          onStartGame={() => setShowInstructions(false)}
+        />
+      )}
+
+      {/* Top Header: Level & Record (NO sound toggle as requested) */}
       <div
         style={{
           width: '100%',
@@ -543,150 +535,134 @@ export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({
           padding: '0 4px',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#00ff66', fontSize: '0.82rem', fontWeight: 800 }}>
-          <Terminal size={15} />
-          <span>FLAP PROTOCOL // CPU GATE</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {onBack && (
+            <button
+              onClick={() => {
+                soundSystem.playClick();
+                soundSystem.stopFlapMusicAndResumeSite();
+                onBack();
+              }}
+              className="btn-cyber-secondary"
+              style={{ padding: '4px 10px', fontSize: '0.72rem' }}
+            >
+              ◂ BACK
+            </button>
+          )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#ff2a4b', fontSize: '0.82rem', fontWeight: 800 }}>
+            <Terminal size={15} />
+            <span>LEVEL 1 // FLAP PROTOCOL</span>
+          </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          {/* Sound Mute/Unmute Toggle */}
-          <button
-            onClick={handleToggleSound}
-            className="btn-cyber-secondary"
-            style={{
-              padding: '5px 10px',
-              fontSize: '0.75rem',
-              borderColor: isMuted ? 'rgba(255, 51, 68, 0.4)' : '#00ff66',
-              color: isMuted ? '#ff7080' : '#00ff66',
-            }}
-            title={isMuted ? 'Unmute Sound' : 'Mute Sound'}
-          >
-            {isMuted ? <VolumeX size={14} /> : <Volume2 size={14} />}
-            <span>{isMuted ? 'MUTED' : 'AUDIO:ON'}</span>
-          </button>
-
-          {/* Record Pill */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              background: 'rgba(0, 255, 102, 0.08)',
-              border: '1px solid rgba(0, 255, 102, 0.3)',
-              padding: '5px 12px',
-              borderRadius: '4px',
-              fontSize: '0.78rem',
-              fontWeight: 700,
-              color: '#00ff66',
-            }}
-          >
-            <Trophy size={13} />
-            <span>BEST: {bestScore}</span>
-          </div>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            background: 'rgba(255, 42, 75, 0.1)',
+            border: '1px solid rgba(255, 42, 75, 0.3)',
+            padding: '5px 12px',
+            borderRadius: '4px',
+            fontSize: '0.78rem',
+            fontWeight: 700,
+            color: '#ffb703',
+          }}
+        >
+          <Trophy size={13} />
+          <span>RECORD: {bestScore}</span>
         </div>
       </div>
 
-      {/* Game Canvas Wrapper */}
-      <div className="game-canvas-wrapper" style={{ border: '2px solid #00ff66' }}>
-        <div ref={gameContainerRef} style={{ width: '100%', height: '100%' }} />
-
-        {/* Live Remaining Passes Countdown Display (12 -> 11 -> ... -> 0) */}
+      {/* Main Canvas Frame */}
+      <div
+        className="game-canvas-wrapper"
+        style={{
+          position: 'relative',
+          maxWidth: '440px',
+          height: '620px',
+          border: '2px solid #ff2a4b',
+          boxShadow: '0 0 35px rgba(255, 42, 75, 0.35)',
+        }}
+      >
+        {/* Remaining Passes HUD */}
         <div
           style={{
             position: 'absolute',
-            top: 18,
+            top: '12px',
             left: '50%',
             transform: 'translateX(-50%)',
-            pointerEvents: 'none',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
             zIndex: 20,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            background: 'rgba(5, 5, 8, 0.9)',
+            border: '1px solid #ff2a4b',
+            boxShadow: '0 0 15px rgba(255, 42, 75, 0.4)',
+            padding: '6px 16px',
+            borderRadius: '20px',
+            pointerEvents: 'none',
           }}
         >
+          <div style={{ fontSize: '0.74rem', color: '#cbd5e1', fontWeight: 700 }}>
+            REMAINING PASSES:
+          </div>
           <div
             style={{
-              fontSize: '2.5rem',
+              fontSize: '1.2rem',
               fontWeight: 900,
-              color: remainingPasses <= 3 ? '#00e5ff' : '#00ff66',
-              textShadow: '0 0 16px rgba(0, 255, 102, 0.8)',
-              lineHeight: 1,
+              color: remainingPasses <= 3 ? '#ffb703' : '#ff2a4b',
             }}
           >
             {remainingPasses}
           </div>
-          <span
-            style={{
-              fontSize: '0.72rem',
-              color: '#00e5ff',
-              fontWeight: 800,
-              letterSpacing: '0.08em',
-              textTransform: 'uppercase',
-              marginTop: '4px',
-            }}
-          >
-            REMAINING PASSES
-          </span>
-
-          {/* Progress Indicator Dots (12 Dots) */}
-          <div style={{ display: 'flex', gap: '3px', marginTop: '6px' }}>
-            {Array.from({ length: 12 }).map((_, i) => (
-              <div
-                key={i}
-                style={{
-                  width: '6px',
-                  height: '6px',
-                  borderRadius: '1px',
-                  background: i < (12 - remainingPasses) ? '#00ff66' : 'rgba(255, 255, 255, 0.15)',
-                  boxShadow: i < (12 - remainingPasses) ? '0 0 6px #00ff66' : 'none',
-                }}
-              />
-            ))}
-          </div>
         </div>
 
-        {/* Idle Start Prompt */}
+        {/* Phaser Canvas */}
+        <div ref={gameContainerRef} style={{ width: '100%', height: '100%' }} />
+
+        {/* Idle prompt */}
         {gameState === 'IDLE' && (
           <div
             style={{
               position: 'absolute',
               inset: 0,
+              backgroundColor: 'rgba(5, 5, 8, 0.4)',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              background: 'rgba(4, 6, 9, 0.55)',
-              zIndex: 25,
               pointerEvents: 'none',
-              padding: '20px',
+              zIndex: 15,
             }}
           >
             <div
-              className="terminal-panel"
+              className="pulse-cyber"
               style={{
-                padding: '18px 24px',
+                background: 'rgba(5, 5, 8, 0.92)',
+                border: '1px solid #ff2a4b',
+                padding: '12px 24px',
+                borderRadius: '6px',
                 textAlign: 'center',
-                border: '1px solid #00ff66',
-                boxShadow: '0 0 25px rgba(0, 255, 102, 0.25)',
               }}
             >
-              <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#00ff66', marginBottom: '6px' }}>
-                [ TAP / PRESS SPACE TO FLY ]
+              <div style={{ fontSize: '0.94rem', fontWeight: 800, color: '#fff', marginBottom: '4px' }}>
+                TAP / SPACEBAR TO FLY!
               </div>
-              <div style={{ fontSize: '0.8rem', color: '#cbd5e1' }}>
-                Fly safely through 12 CPU obstacle gaps to unlock the birthday site!
+              <div style={{ fontSize: '0.75rem', color: '#ffb703' }}>
+                12 CPU gaps daati level clear chey!
               </div>
             </div>
           </div>
         )}
 
-        {/* Lose Screen: Clean Contained Video Clip (NO browser controls) + Retry Button */}
+        {/* Lose Screen: Contained lose-clip.mp4 with sound + Retry Button */}
         {gameState === 'GAMEOVER' && (
           <div
             style={{
               position: 'absolute',
               inset: 0,
-              background: 'rgba(4, 6, 9, 0.94)',
+              backgroundColor: 'rgba(5, 5, 8, 0.92)',
               backdropFilter: 'blur(8px)',
               display: 'flex',
               flexDirection: 'column',
@@ -695,7 +671,6 @@ export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({
               padding: '20px',
               zIndex: 30,
               textAlign: 'center',
-              overflowY: 'auto',
             }}
           >
             <div
@@ -703,9 +678,9 @@ export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({
               style={{
                 padding: '22px 20px',
                 width: '100%',
-                maxWidth: '320px',
-                border: '1px solid #ff3344',
-                boxShadow: '0 0 35px rgba(255, 51, 68, 0.4)',
+                maxWidth: '330px',
+                border: '1px solid #ff2a4b',
+                boxShadow: '0 0 35px rgba(255, 42, 75, 0.4)',
               }}
             >
               <div
@@ -713,18 +688,17 @@ export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '6px',
-                  color: '#ff3344',
+                  color: '#ff2a4b',
                   fontWeight: 800,
                   fontSize: '1rem',
                   marginBottom: '12px',
-                  letterSpacing: '0.04em',
                 }}
               >
                 <ShieldAlert size={18} />
-                <span>CPU BARRIER COLLISION</span>
+                <span>COLLISION OCCURRED!</span>
               </div>
 
-              {/* Clean Contained Video Clip: NO BROWSER CONTROLS */}
+              {/* Contained Video Clip WITH AUDIO */}
               <div
                 style={{
                   position: 'relative',
@@ -732,15 +706,15 @@ export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({
                   borderRadius: '6px',
                   overflow: 'hidden',
                   background: '#000',
-                  border: '1px solid rgba(255, 51, 68, 0.5)',
+                  border: '1px solid rgba(255, 42, 75, 0.5)',
                   boxShadow: '0 6px 20px rgba(0, 0, 0, 0.9)',
                   marginBottom: '16px',
                 }}
               >
                 <video
+                  ref={loseVideoRef}
                   src={BIRTHDAY_CONFIG.loseClipUrl}
                   autoPlay
-                  muted
                   playsInline
                   loop
                   style={{
@@ -749,116 +723,78 @@ export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({
                     display: 'block',
                     backgroundColor: '#000',
                     objectFit: 'contain',
-                    pointerEvents: 'none', // Prevents any browser interaction overlays
+                    pointerEvents: 'none',
                   }}
                 />
               </div>
 
-              {/* Pass Progress */}
               <div
                 style={{
-                  background: 'rgba(255, 51, 68, 0.08)',
+                  background: 'rgba(255, 42, 75, 0.08)',
                   borderRadius: '4px',
                   padding: '10px 14px',
                   marginBottom: '18px',
-                  border: '1px solid rgba(255, 51, 68, 0.25)',
+                  border: '1px solid rgba(255, 42, 75, 0.25)',
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                  <span style={{ color: '#94a3b8', fontSize: '0.8rem' }}>Passes Cleared:</span>
+                  <span style={{ color: '#9e646d', fontSize: '0.8rem' }}>Passes Cleared:</span>
                   <span style={{ fontWeight: 800, color: '#fff', fontSize: '0.92rem' }}>{12 - remainingPasses} / 12</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: '#94a3b8', fontSize: '0.8rem' }}>Remaining Needed:</span>
-                  <span style={{ fontWeight: 800, color: '#ff3344', fontSize: '0.92rem' }}>12 PASSES</span>
+                  <span style={{ color: '#9e646d', fontSize: '0.8rem' }}>Remaining Needed:</span>
+                  <span style={{ fontWeight: 800, color: '#ff2a4b', fontSize: '0.92rem' }}>12 PASSES</span>
                 </div>
               </div>
 
-              {/* Clearly Visible Retry Button Outside Video */}
               <button
                 onClick={handleRestart}
                 className="btn-cyber-primary pulse-cyber"
-                style={{
-                  width: '100%',
-                  padding: '14px',
-                  fontSize: '1rem',
-                  backgroundColor: 'rgba(0, 255, 102, 0.16)',
-                  borderColor: '#00ff66',
-                  color: '#00ff66',
-                  boxShadow: '0 0 25px rgba(0, 255, 102, 0.4)',
-                }}
+                style={{ width: '100%', padding: '12px', fontSize: '0.92rem' }}
               >
                 <RotateCcw size={16} />
-                <span>[ RETRY FLAP SEQUENCE ]</span>
+                <span>[ RETRY LEVEL 1 (12 PASSES) ]</span>
               </button>
             </div>
           </div>
         )}
 
-        {/* Level Complete Screen (12 Passes Done -> Opens Birthday Website) */}
+        {/* Level Complete */}
         {gameState === 'COMPLETE' && (
           <div
             style={{
               position: 'absolute',
               inset: 0,
-              background: 'rgba(4, 6, 9, 0.94)',
-              backdropFilter: 'blur(10px)',
+              backgroundColor: 'rgba(5, 5, 8, 0.9)',
+              backdropFilter: 'blur(8px)',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
               padding: '24px',
-              zIndex: 35,
+              zIndex: 30,
               textAlign: 'center',
             }}
           >
             <div
               className="terminal-panel"
               style={{
-                padding: '36px 24px',
-                width: '100%',
+                padding: '28px 24px',
+                border: '1px solid #ffb703',
+                boxShadow: '0 0 40px rgba(255, 183, 3, 0.4)',
                 maxWidth: '340px',
-                border: '1px solid #00ff66',
-                boxShadow: '0 0 35px rgba(0, 255, 102, 0.4)',
               }}
             >
-              <div
-                style={{
-                  color: '#00ff66',
-                  fontSize: '0.85rem',
-                  fontWeight: 800,
-                  letterSpacing: '0.08em',
-                  marginBottom: '8px',
-                }}
-              >
-                ALL 12 PASSES COMPLETE!
+              <div style={{ fontSize: '2.5rem', marginBottom: '10px' }}>🏆</div>
+              <div style={{ fontSize: '1.25rem', fontWeight: 900, color: '#ffb703', marginBottom: '8px' }}>
+                LEVEL 1 CLEARED!
               </div>
-
-              <h2
-                className="text-neon-green"
-                style={{ fontSize: '1.5rem', fontWeight: 900, marginBottom: '8px' }}
-              >
-                ACCESS GRANTED // BIRTHDAY SYSTEM UNLOCKED
-              </h2>
-
-              <p style={{ color: '#cbd5e1', fontSize: '0.88rem', marginBottom: '24px' }}>
-                Decryption complete. Entering South Dev's official birthday arcade & celebration...
+              <p style={{ color: '#cbd5e1', fontSize: '0.85rem', marginBottom: '16px' }}>
+                12 CPU barriers ni clean ga cross chesav! Photo moment loading...
               </p>
-
-              <button
-                onClick={() => onLevelComplete(12)}
-                className="btn-cyber-primary pulse-cyber"
-                style={{ width: '100%', padding: '14px', fontSize: '1rem' }}
-              >
-                <span>[ ENTER BIRTHDAY WEBSITE ]</span>
-              </button>
             </div>
           </div>
         )}
-      </div>
-
-      <div style={{ marginTop: '12px', color: '#5c7866', fontSize: '0.78rem', textAlign: 'center' }}>
-        Tap screen, click, or press <kbd style={{ background: '#0a141b', padding: '2px 6px', border: '1px solid #00ff66', color: '#00ff66' }}>Space</kbd> to fly
       </div>
     </div>
   );

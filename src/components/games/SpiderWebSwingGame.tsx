@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import confetti from 'canvas-confetti';
-import { ArrowLeft, RotateCcw, Trophy, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, RotateCcw, Trophy, CheckCircle2, Terminal, ShieldAlert } from 'lucide-react';
 import { BIRTHDAY_CONFIG } from '../../config/birthdayConfig';
 import { soundSystem } from '../../utils/audioSystem';
 
@@ -29,20 +29,24 @@ export const SpiderWebSwingGame: React.FC<SpiderWebSwingGameProps> = ({ onComple
   const [distance, setDistance] = useState<number>(0);
   const [gameState, setGameState] = useState<'IDLE' | 'PLAYING' | 'GAMEOVER' | 'COMPLETE'>('IDLE');
   const [bestScore, setBestScore] = useState<number>(() => {
-    return parseInt(localStorage.getItem('birthday_spiderman_best') || '0', 10);
+    try {
+      return parseInt(localStorage.getItem('birthday_spiderman_best') || '0', 10);
+    } catch {
+      return 0;
+    }
   });
 
-  const FINISH_DISTANCE = 300; // Finish line in meters
+  const FINISH_DISTANCE = 180; // 180 meters to clear
 
   const stateRef = useRef({
     x: 80,
-    y: 280,
-    vx: 3,
-    vy: 0,
-    webAttached: false,
-    anchorX: 0,
-    anchorY: 0,
-    webLength: 0,
+    y: 230,
+    vx: 4.2,
+    vy: 1.0,
+    webAttached: true,
+    anchorX: 140,
+    anchorY: 40,
+    webLength: 200,
     cameraX: 0,
     distance: 0,
     score: 0,
@@ -53,20 +57,32 @@ export const SpiderWebSwingGame: React.FC<SpiderWebSwingGameProps> = ({ onComple
     faceImage: null as HTMLImageElement | null,
   });
 
+  // Pause music on game over so lose video sound plays clearly
+  useEffect(() => {
+    if (gameState === 'GAMEOVER') {
+      soundSystem.pauseMusic();
+    } else if (gameState === 'PLAYING') {
+      soundSystem.playSiteMusic();
+    }
+  }, [gameState]);
+
   const startGame = () => {
     soundSystem.playClick();
+    soundSystem.playSiteMusic();
     const s = stateRef.current;
     s.x = 80;
-    s.y = 280;
-    s.vx = 4;
-    s.vy = 0;
-    s.webAttached = false;
+    s.y = 230;
+    s.vx = 4.2;
+    s.vy = 1.0;
+    s.anchorX = 140;
+    s.anchorY = 40; // All webs at same height throughout game
+    s.webLength = Math.hypot(s.x - s.anchorX, s.y - s.anchorY);
+    s.webAttached = true; // Start ALREADY swinging from web
     s.cameraX = 0;
     s.distance = 0;
     s.score = 0;
     s.gameState = 'PLAYING';
 
-    // Populate stars & obstacles along track
     s.stars = [];
     s.drones = [];
     for (let x = 200; x < FINISH_DISTANCE * 25; x += 120) {
@@ -74,16 +90,16 @@ export const SpiderWebSwingGame: React.FC<SpiderWebSwingGameProps> = ({ onComple
         s.stars.push({
           id: s.nextId++,
           x,
-          y: Math.random() * 200 + 180,
-          type: Math.random() < 0.4 ? 'gift' : 'star',
+          y: Math.random() * 150 + 200,
+          type: Math.random() < 0.35 ? 'gift' : 'star',
         });
       }
-      if (x > 400 && Math.random() < 0.35) {
+      if (x > 380 && Math.random() < 0.25) {
         s.drones.push({
           id: s.nextId++,
           x,
-          y: Math.random() * 180 + 200,
-          vy: Math.random() < 0.5 ? 1.5 : -1.5,
+          y: Math.random() * 140 + 220,
+          vy: Math.random() < 0.5 ? 1.0 : -1.0,
         });
       }
     }
@@ -93,30 +109,40 @@ export const SpiderWebSwingGame: React.FC<SpiderWebSwingGameProps> = ({ onComple
     setGameState('PLAYING');
   };
 
-  const attachWeb = () => {
+  // On clicking or tapping, swing forward to next web at same fixed height
+  const swingToNextWeb = () => {
     const s = stateRef.current;
     if (s.gameState !== 'PLAYING') return;
-    if (!s.webAttached) {
-      // Find anchor above and slightly ahead of player
-      s.anchorX = s.x + 60;
-      s.anchorY = 50;
-      const dx = s.x - s.anchorX;
-      const dy = s.y - s.anchorY;
-      s.webLength = Math.sqrt(dx * dx + dy * dy);
-      s.webAttached = true;
-      soundSystem.playJump();
-    }
+
+    // Fixed web anchor height: 40px throughout the game
+    const nextAnchorX = Math.max(s.x + 95, s.anchorX + 115);
+    s.anchorX = nextAnchorX;
+    s.anchorY = 40; // Same height throughout game
+    const dx = s.x - s.anchorX;
+    const dy = s.y - s.anchorY;
+    s.webLength = Math.max(160, Math.min(260, Math.sqrt(dx * dx + dy * dy)));
+    s.webAttached = true;
+
+    // Swing impulse forward and up into the new arc
+    s.vx = Math.max(s.vx + 1.2, 4.4);
+    s.vy = Math.min(s.vy, -2.4);
+    soundSystem.playJump();
   };
 
-  const releaseWeb = () => {
-    const s = stateRef.current;
-    if (s.webAttached) {
-      s.webAttached = false;
-      // Give a slight forward boost on release
-      s.vx += 1.5;
-    }
-  };
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code === 'Space' || e.code === 'ArrowUp' || e.key === 'w') {
+        e.preventDefault();
+        swingToNextWeb();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
 
+  // Main Canvas Loop
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -124,219 +150,191 @@ export const SpiderWebSwingGame: React.FC<SpiderWebSwingGameProps> = ({ onComple
     if (!ctx) return;
 
     const width = (canvas.width = 420);
-    const height = (canvas.height = 600);
+    const height = (canvas.height = 620);
 
-    const faceImg = new Image();
-    faceImg.src = BIRTHDAY_CONFIG.characterFaceUrl;
-    faceImg.onload = () => {
-      stateRef.current.faceImage = faceImg;
+    const face = new Image();
+    face.src = BIRTHDAY_CONFIG.characterFaceUrl;
+    face.onload = () => {
+      stateRef.current.faceImage = face;
     };
 
     let animId: number;
 
-    const onPointerDown = () => attachWeb();
-    const onPointerUp = () => releaseWeb();
-
-    canvas.addEventListener('mousedown', onPointerDown);
-    canvas.addEventListener('mouseup', onPointerUp);
-    canvas.addEventListener('touchstart', onPointerDown, { passive: true });
-    canvas.addEventListener('touchend', onPointerUp);
-
     const loop = () => {
-      ctx.clearRect(0, 0, width, height);
+      animId = requestAnimationFrame(loop);
       const s = stateRef.current;
 
-      // Draw Gradient Twilight Sky
-      const skyGrad = ctx.createLinearGradient(0, 0, 0, height);
-      skyGrad.addColorStop(0, '#090a14');
-      skyGrad.addColorStop(0.6, '#1e1438');
-      skyGrad.addColorStop(1, '#3b0764');
-      ctx.fillStyle = skyGrad;
+      // Dark cyber city background
+      ctx.fillStyle = '#050508';
       ctx.fillRect(0, 0, width, height);
 
-      // Camera offset
-      const cx = s.x - 100;
+      // Red and Gold skyline silhouettes
+      ctx.fillStyle = 'rgba(255, 42, 75, 0.08)';
+      ctx.fillRect(0, height - 180, width, 180);
 
-      // Background Skyscraper silhouettes with parallax
-      ctx.fillStyle = '#110d24';
-      for (let bx = -200; bx < width + 1000; bx += 90) {
-        const buildingX = bx - (cx * 0.3) % 400;
-        ctx.fillRect(buildingX, 180, 75, 420);
+      // Web anchor ceiling rail
+      ctx.strokeStyle = '#ff2a4b';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(0, 40);
+      ctx.lineTo(width, 40);
+      ctx.stroke();
+
+      if (s.gameState !== 'PLAYING') {
+        drawHero(ctx, s.x, s.y, s);
+        return;
       }
 
-      ctx.fillStyle = '#1c1538';
-      for (let bx = -100; bx < width + 1000; bx += 140) {
-        const buildingX = bx - (cx * 0.6) % 500;
-        ctx.fillRect(buildingX, 240, 110, 360);
+      // Physics
+      if (s.webAttached) {
+        const dx = s.x - s.anchorX;
+        const dy = s.y - s.anchorY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist > s.webLength) {
+          const nx = dx / dist;
+          const ny = dy / dist;
+          const dot = s.vx * nx + s.vy * ny;
+          s.vx -= dot * nx;
+          s.vy -= dot * ny;
+          s.x = s.anchorX + nx * s.webLength;
+          s.y = s.anchorY + ny * s.webLength;
+        }
+
+        s.vy += 0.35; // Pendulum gravity
+      } else {
+        s.vy += 0.42; // Free fall gravity
+        s.vx = Math.max(2.5, s.vx * 0.995);
       }
 
-      // Logic update if playing
-      if (s.gameState === 'PLAYING') {
-        const gravity = 0.38;
+      s.x += s.vx;
+      s.y += s.vy;
+      s.distance = Math.floor(s.x / 25);
+      setDistance(s.distance);
 
-        if (s.webAttached) {
-          // Pendulum constraint
-          const dx = s.x - s.anchorX;
-          const dy = s.y - s.anchorY;
-          let dist = Math.sqrt(dx * dx + dy * dy);
+      s.cameraX = s.x - 120;
 
-          if (dist > s.webLength) {
-            const nx = dx / dist;
-            const ny = dy / dist;
-            // Dampen along normal and apply tension
-            const dot = s.vx * nx + s.vy * ny;
-            s.vx -= dot * nx;
-            s.vy -= dot * ny;
+      // Draw Web Line
+      if (s.webAttached) {
+        ctx.strokeStyle = '#ffb703';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(s.anchorX - s.cameraX, s.anchorY);
+        ctx.lineTo(s.x - s.cameraX, s.y);
+        ctx.stroke();
+      }
 
-            // Restrict position
-            s.x = s.anchorX + nx * s.webLength;
-            s.y = s.anchorY + ny * s.webLength;
-          }
+      // Ground or Floor collision
+      if (s.y > height - 40) {
+        soundSystem.playHit();
+        s.gameState = 'GAMEOVER';
+        setGameState('GAMEOVER');
+        return;
+      }
 
-          s.vy += gravity * 0.7;
-        } else {
-          // Free fall
-          s.vy += gravity;
-          s.vx = Math.max(2.5, s.vx * 0.995); // Natural friction
-        }
+      // Ceiling bounce
+      if (s.y < 55) {
+        s.y = 55;
+        s.vy = 1;
+      }
 
-        s.x += s.vx;
-        s.y += s.vy;
+      // Draw Stars and Collectibles
+      for (let i = s.stars.length - 1; i >= 0; i--) {
+        const star = s.stars[i];
+        const screenX = star.x - s.cameraX;
 
-        // Update distance
-        s.distance = Math.floor(s.x / 25);
-        setDistance(s.distance);
+        if (screenX > -30 && screenX < width + 30) {
+          ctx.fillStyle = star.type === 'gift' ? '#ff2a4b' : '#ffb703';
+          ctx.beginPath();
+          ctx.arc(screenX, star.y, star.type === 'gift' ? 12 : 9, 0, Math.PI * 2);
+          ctx.fill();
 
-        // Check Ground or Fall off
-        if (s.y > height - 60 || s.y < -80) {
-          s.gameState = 'GAMEOVER';
-          setGameState('GAMEOVER');
-          soundSystem.playHit();
-
-          const currentBest = parseInt(localStorage.getItem('birthday_spiderman_best') || '0', 10);
-          if (s.score > currentBest) {
-            localStorage.setItem('birthday_spiderman_best', s.score.toString());
-            setBestScore(s.score);
-          }
-        }
-
-        // Check Finish Line
-        if (s.distance >= FINISH_DISTANCE) {
-          s.gameState = 'COMPLETE';
-          setGameState('COMPLETE');
-          soundSystem.playVictory();
-          confetti({ particleCount: 110, spread: 80 });
-          onComplete(s.score + 100);
-        }
-
-        // Star / Gift Collections
-        for (let i = s.stars.length - 1; i >= 0; i--) {
-          const item = s.stars[i];
-          const dist = Math.sqrt((s.x - item.x) ** 2 + (s.y - item.y) ** 2);
-          if (dist < 40) {
+          // Collectible hit check
+          const distToHero = Math.hypot(star.x - s.x, star.y - s.y);
+          if (distToHero < 28) {
             soundSystem.playScore();
-            s.score += item.type === 'gift' ? 30 : 15;
+            s.score += star.type === 'gift' ? 25 : 10;
             setScore(s.score);
             s.stars.splice(i, 1);
           }
         }
+      }
 
-        // Drone Hazard Collision
-        for (let d of s.drones) {
-          d.y += d.vy;
-          if (d.y < 160 || d.y > 420) d.vy *= -1;
+      // Draw Drones / Obstacles
+      for (let i = s.drones.length - 1; i >= 0; i--) {
+        const drone = s.drones[i];
+        drone.y += drone.vy;
+        if (drone.y < 120 || drone.y > 440) drone.vy *= -1;
 
-          const dist = Math.sqrt((s.x - d.x) ** 2 + (s.y - d.y) ** 2);
-          if (dist < 32) {
-            // Hit drone!
+        const screenX = drone.x - s.cameraX;
+        if (screenX > -30 && screenX < width + 30) {
+          ctx.fillStyle = '#ff2a4b';
+          ctx.fillRect(screenX - 14, drone.y - 14, 28, 28);
+          ctx.strokeStyle = '#ffb703';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(screenX - 14, drone.y - 14, 28, 28);
+
+          // Drone collision
+          const distToHero = Math.hypot(drone.x - s.x, drone.y - s.y);
+          if (distToHero < 30) {
             soundSystem.playHit();
             s.gameState = 'GAMEOVER';
             setGameState('GAMEOVER');
-            break;
+            return;
           }
         }
       }
 
-      // Draw Stars & Gifts
-      s.stars.forEach((item) => {
-        const drawX = item.x - cx;
-        if (drawX > -40 && drawX < width + 40) {
-          ctx.font = '24px serif';
-          ctx.textAlign = 'center';
-          ctx.fillText(item.type === 'gift' ? '🎁' : '⭐', drawX, item.y);
-        }
-      });
-
-      // Draw Drones
-      s.drones.forEach((d) => {
-        const drawX = d.x - cx;
-        if (drawX > -40 && drawX < width + 40) {
-          ctx.fillStyle = '#ef4444';
-          ctx.beginPath();
-          ctx.arc(drawX, d.y, 14, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.fillStyle = '#ffffff';
-          ctx.font = '10px monospace';
-          ctx.textAlign = 'center';
-          ctx.fillText('⚡', drawX, d.y + 4);
-        }
-      });
-
-      // Draw Web Line
-      if (s.webAttached) {
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 2.5;
-        ctx.shadowColor = '#00e5ff';
-        ctx.shadowBlur = 8;
-        ctx.beginPath();
-        ctx.moveTo(s.anchorX - cx, s.anchorY);
-        ctx.lineTo(s.x - cx, s.y);
-        ctx.stroke();
-        ctx.shadowBlur = 0;
-
-        // Web anchor point
-        ctx.fillStyle = '#00e5ff';
-        ctx.beginPath();
-        ctx.arc(s.anchorX - cx, s.anchorY, 6, 0, Math.PI * 2);
-        ctx.fill();
+      // Check Finish Line
+      if (s.distance >= FINISH_DISTANCE) {
+        s.gameState = 'COMPLETE';
+        setGameState('COMPLETE');
+        soundSystem.playVictory();
+        confetti({
+          particleCount: 160,
+          spread: 90,
+          colors: ['#ff2a4b', '#ffb703', '#ffffff', '#ff1744'],
+        });
       }
 
-      // Draw Superhero Hero
-      const drawPx = s.x - cx;
-      ctx.save();
-      ctx.translate(drawPx, s.y);
+      // Draw Hero
+      drawHero(ctx, s.x - s.cameraX, s.y, s);
+    };
 
-      // Hero body (Red & Blue web suit)
-      ctx.fillStyle = '#dc2626';
-      ctx.fillRect(-12, 0, 24, 28);
-      ctx.fillStyle = '#2563eb';
-      ctx.fillRect(-10, 28, 8, 16);
-      ctx.fillRect(2, 28, 8, 16);
+    const drawHero = (c: CanvasRenderingContext2D, px: number, py: number, s: any) => {
+      c.save();
+      // Hero Cyber Cape / Aura
+      c.fillStyle = 'rgba(255, 42, 75, 0.25)';
+      c.beginPath();
+      c.arc(px, py, 20, 0, Math.PI * 2);
+      c.fill();
 
-      // Hero Head with Birthday Person's Face
-      if (s.faceImage) {
-        ctx.drawImage(s.faceImage, -18, -28, 36, 36);
+      // Ashu Character Face
+      const faceImg = s.faceImage;
+      if (faceImg && faceImg.complete) {
+        c.beginPath();
+        c.arc(px, py, 16, 0, Math.PI * 2);
+        c.closePath();
+        c.clip();
+        c.drawImage(faceImg, px - 16, py - 16, 32, 32);
       } else {
-        ctx.fillStyle = '#dc2626';
-        ctx.beginPath();
-        ctx.arc(0, -14, 16, 0, Math.PI * 2);
-        ctx.fill();
+        c.fillStyle = '#ff2a4b';
+        c.beginPath();
+        c.arc(px, py, 14, 0, Math.PI * 2);
+        c.fill();
       }
+      c.restore();
 
-      ctx.restore();
-
-      animId = requestAnimationFrame(loop);
+      // Cyber Glowing Ring
+      c.strokeStyle = '#ffb703';
+      c.lineWidth = 2;
+      c.beginPath();
+      c.arc(px, py, 17, 0, Math.PI * 2);
+      c.stroke();
     };
 
-    loop();
-
-    return () => {
-      cancelAnimationFrame(animId);
-      canvas.removeEventListener('mousedown', onPointerDown);
-      canvas.removeEventListener('mouseup', onPointerUp);
-      canvas.removeEventListener('touchstart', onPointerDown);
-      canvas.removeEventListener('touchend', onPointerUp);
-    };
+    animId = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(animId);
   }, []);
 
   return (
@@ -350,9 +348,11 @@ export const SpiderWebSwingGame: React.FC<SpiderWebSwingGameProps> = ({ onComple
         justifyContent: 'center',
         padding: '16px 12px',
         zIndex: 10,
+        fontFamily: 'var(--font-mono)',
+        backgroundColor: '#050508',
       }}
     >
-      {/* Top Header */}
+      {/* Header */}
       <div
         style={{
           width: '100%',
@@ -360,128 +360,223 @@ export const SpiderWebSwingGame: React.FC<SpiderWebSwingGameProps> = ({ onComple
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          marginBottom: '12px',
+          marginBottom: '10px',
+          padding: '0 4px',
         }}
       >
-        <button
-          onClick={() => {
-            soundSystem.playClick();
-            onBack();
-          }}
-          className="btn-secondary"
-          style={{ padding: '8px 14px', fontSize: '0.85rem' }}
-        >
-          <ArrowLeft size={16} />
-          <span>Arcade</span>
-        </button>
-
-        <div style={{ color: '#00e5ff', fontWeight: 800, fontSize: '0.9rem' }}>
-          DISTANCE: {distance}m / {FINISH_DISTANCE}m
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <button
+            onClick={() => {
+              soundSystem.playClick();
+              onBack();
+            }}
+            className="btn-cyber-secondary"
+            style={{ padding: '4px 10px', fontSize: '0.72rem' }}
+          >
+            <ArrowLeft size={12} />
+            <span>BACK</span>
+          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#ff2a4b', fontSize: '0.82rem', fontWeight: 800 }}>
+            <Terminal size={15} />
+            <span>LEVEL 4 // SPIDER WEB SWING</span>
+          </div>
         </div>
 
-        {bestScore > 0 && (
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              background: 'rgba(255, 215, 0, 0.1)',
-              border: '1px solid rgba(255, 215, 0, 0.3)',
-              padding: '6px 14px',
-              borderRadius: '9999px',
-              fontSize: '0.85rem',
-              fontWeight: 700,
-              color: '#ffd700',
-            }}
-          >
-            <Trophy size={15} />
-            <span>BEST: {bestScore}</span>
-          </div>
-        )}
+        <div style={{ color: '#ffb703', fontSize: '0.8rem', fontWeight: 800 }}>
+          GOAL: {FINISH_DISTANCE}m
+        </div>
       </div>
 
-      {/* Canvas */}
-      <div className="game-canvas-wrapper" style={{ height: '600px' }}>
-        <canvas ref={canvasRef} style={{ width: '100%', height: '100%', display: 'block' }} />
-
-        {/* Live HUD */}
+      {/* Canvas Wrapper */}
+      <div
+        className="game-canvas-wrapper"
+        onClick={swingToNextWeb}
+        onTouchStart={(e) => {
+          e.preventDefault();
+          swingToNextWeb();
+        }}
+        style={{
+          position: 'relative',
+          maxWidth: '420px',
+          height: '620px',
+          border: '2px solid #ff2a4b',
+          boxShadow: '0 0 35px rgba(255, 42, 75, 0.4)',
+          cursor: 'pointer',
+        }}
+      >
+        {/* HUD Overlay */}
         <div
           style={{
             position: 'absolute',
-            top: 16,
-            left: 20,
+            top: '12px',
+            left: '12px',
+            right: '12px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            zIndex: 20,
             pointerEvents: 'none',
           }}
         >
-          <div style={{ fontSize: '2.4rem', fontWeight: 900, color: '#fff', lineHeight: 1 }}>{score}</div>
-          <div style={{ fontSize: '0.75rem', color: '#00e5ff', fontWeight: 700 }}>POINTS</div>
+          <div style={{ background: 'rgba(5, 5, 8, 0.9)', border: '1px solid #ff2a4b', padding: '4px 12px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 800, color: '#ffb703' }}>
+            DISTANCE: {distance}m / {FINISH_DISTANCE}m
+          </div>
+          <div style={{ background: 'rgba(5, 5, 8, 0.9)', border: '1px solid #ffb703', padding: '4px 12px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 800, color: '#fff' }}>
+            POINTS: {score}
+          </div>
         </div>
 
-        {/* Start Game Modal */}
+        <canvas
+          ref={canvasRef}
+          onClick={swingToNextWeb}
+          onTouchStart={(e) => {
+            e.preventDefault();
+            swingToNextWeb();
+          }}
+          style={{ width: '100%', height: '100%', display: 'block', cursor: 'pointer' }}
+        />
+
+        {/* In-game swing tap overlay for touchscreen & ease of use */}
+        {gameState === 'PLAYING' && (
+          <div
+            style={{
+              position: 'absolute',
+              bottom: '16px',
+              left: '12px',
+              right: '12px',
+              display: 'flex',
+              justifyContent: 'center',
+              zIndex: 25,
+            }}
+          >
+            <button
+              onClick={swingToNextWeb}
+              className="btn-cyber-primary pulse-cyber"
+              style={{
+                padding: '12px 24px',
+                fontSize: '0.9rem',
+                fontWeight: 900,
+                boxShadow: '0 0 20px rgba(255, 42, 75, 0.5)',
+                width: '100%',
+                maxWidth: '320px',
+              }}
+            >
+              <span>[ TAP TO SWING TO NEXT WEB 🕸️ ]</span>
+            </button>
+          </div>
+        )}
+
+        {/* Start Overlay */}
         {gameState === 'IDLE' && (
           <div
             style={{
               position: 'absolute',
               inset: 0,
-              background: 'rgba(10, 11, 20, 0.85)',
-              backdropFilter: 'blur(8px)',
+              backgroundColor: 'rgba(5, 5, 8, 0.94)',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
               padding: '24px',
               textAlign: 'center',
+              zIndex: 30,
             }}
           >
-            <div className="glass-panel" style={{ padding: '32px 24px', maxWidth: '320px', width: '100%' }}>
-              <div style={{ fontSize: '3rem', marginBottom: '8px' }}>🕷️</div>
-              <h2 style={{ fontSize: '1.6rem', fontWeight: 900, color: '#00e5ff', marginBottom: '8px' }}>
-                Web Slinging Hero
+            <div className="terminal-panel" style={{ padding: '28px 20px', maxWidth: '320px', width: '100%' }}>
+              <div style={{ fontSize: '2.5rem', marginBottom: '8px' }}>🕷️⚡</div>
+              <h2 style={{ fontSize: '1.3rem', fontWeight: 900, color: '#ff2a4b', marginBottom: '8px' }}>
+                SPIDER WEB SWING
               </h2>
-              <p style={{ fontSize: '0.88rem', color: '#cbd5e1', marginBottom: '24px', lineHeight: 1.5 }}>
-                Hold tap or mouse down to shoot and swing webs! Release to launch through the air. Reach {FINISH_DISTANCE}m to win!
+              <p style={{ color: '#cbd5e1', fontSize: '0.84rem', marginBottom: '20px', lineHeight: 1.5 }}>
+                Ashuu starts swinging immediately from the web! Tap anywhere or click to swing forward to the next web. Reach {FINISH_DISTANCE}m to clear!
               </p>
               <button
-                onClick={startGame}
-                className="btn-primary-glow pulse-glow"
-                style={{ width: '100%', padding: '14px', fontSize: '1.1rem', background: '#00e5ff', color: '#090a14' }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  startGame();
+                }}
+                className="btn-cyber-primary pulse-cyber"
+                style={{ width: '100%', padding: '14px' }}
               >
-                SWING INTO ACTION
+                <span>[ START SWINGING ➔ ]</span>
               </button>
             </div>
           </div>
         )}
 
-        {/* Game Over Modal */}
+        {/* Game Over with lose-clip.mp4 */}
         {gameState === 'GAMEOVER' && (
           <div
             style={{
               position: 'absolute',
               inset: 0,
-              background: 'rgba(10, 11, 20, 0.9)',
-              backdropFilter: 'blur(8px)',
+              backgroundColor: 'rgba(5, 5, 8, 0.94)',
+              backdropFilter: 'blur(10px)',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              padding: '24px',
+              padding: '16px',
+              zIndex: 35,
               textAlign: 'center',
             }}
           >
-            <div className="glass-panel" style={{ padding: '32px 24px', maxWidth: '320px', width: '100%' }}>
-              <h2 style={{ fontSize: '1.8rem', fontWeight: 900, color: '#ef4444', marginBottom: '12px' }}>
-                Web Snapped!
-              </h2>
-              <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '16px' }}>
-                Reached {distance}m • Score: <strong style={{ color: '#fff' }}>{score}</strong>
-              </p>
-              <button
-                onClick={startGame}
-                className="btn-primary-glow"
-                style={{ width: '100%', padding: '14px', fontSize: '1.05rem', background: '#00e5ff', color: '#090a14' }}
+            <div
+              className="terminal-panel"
+              style={{
+                padding: '22px 18px',
+                border: '1.5px solid #ff2a4b',
+                boxShadow: '0 0 40px rgba(255, 42, 75, 0.5)',
+                maxWidth: '340px',
+                width: '100%',
+              }}
+            >
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#ff2a4b', fontWeight: 900, fontSize: '0.9rem', marginBottom: '10px' }}>
+                <ShieldAlert size={16} />
+                <span>WEB SNAPPED // LEVEL FAILED!</span>
+              </div>
+
+              {/* Contained Video Clip WITH AUDIO */}
+              <div
+                style={{
+                  position: 'relative',
+                  width: '100%',
+                  borderRadius: '6px',
+                  overflow: 'hidden',
+                  background: '#000',
+                  border: '1px solid rgba(255, 42, 75, 0.6)',
+                  marginBottom: '12px',
+                }}
               >
-                <RotateCcw size={18} />
-                <span>TRY AGAIN</span>
+                <video
+                  src={BIRTHDAY_CONFIG.loseClipUrl}
+                  autoPlay
+                  playsInline
+                  loop
+                  style={{
+                    width: '100%',
+                    maxHeight: '180px',
+                    display: 'block',
+                    backgroundColor: '#000',
+                    objectFit: 'contain',
+                  }}
+                />
+              </div>
+
+              <p style={{ color: '#cbd5e1', fontSize: '0.84rem', marginBottom: '14px' }}>
+                Reached {distance}m • Ground or drone collision! 😂 Ready to retry?
+              </p>
+
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  startGame();
+                }}
+                className="btn-cyber-primary pulse-cyber"
+                style={{ width: '100%', padding: '12px', fontSize: '0.88rem' }}
+              >
+                <RotateCcw size={16} />
+                <span>[ RETRY WEB SWING ]</span>
               </button>
             </div>
           </div>
@@ -493,56 +588,46 @@ export const SpiderWebSwingGame: React.FC<SpiderWebSwingGameProps> = ({ onComple
             style={{
               position: 'absolute',
               inset: 0,
-              background: 'rgba(10, 11, 20, 0.92)',
-              backdropFilter: 'blur(10px)',
+              backgroundColor: 'rgba(5, 5, 8, 0.94)',
+              backdropFilter: 'blur(8px)',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
               padding: '24px',
+              zIndex: 35,
               textAlign: 'center',
             }}
           >
-            <div className="glass-panel" style={{ padding: '36px 24px', maxWidth: '340px', width: '100%' }}>
-              <div
-                style={{
-                  width: '60px',
-                  height: '60px',
-                  borderRadius: '50%',
-                  background: 'rgba(0, 229, 255, 0.2)',
-                  border: '2px solid #00e5ff',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  margin: '0 auto 16px',
-                }}
-              >
-                <CheckCircle2 size={32} color="#00e5ff" />
-              </div>
-              <h2 className="gold-text-shimmer" style={{ fontSize: '1.7rem', fontWeight: 900, marginBottom: '8px' }}>
-                Finish Line Reached!
+            <div className="terminal-panel" style={{ padding: '28px 20px', maxWidth: '340px', width: '100%', border: '1.5px solid #ffb703' }}>
+              <div style={{ fontSize: '2.4rem', marginBottom: '8px' }}>🕷️🏆</div>
+              <h2 style={{ fontSize: '1.3rem', fontWeight: 900, color: '#ffb703', marginBottom: '6px' }}>
+                FINISH LINE REACHED!
               </h2>
-              <p style={{ color: '#cbd5e1', fontSize: '0.9rem', marginBottom: '24px' }}>
-                You swung across the city and saved the birthday celebration! Final Score: <strong style={{ color: '#ffd700' }}>{score + 100}</strong>.
+              <p style={{ color: '#cbd5e1', fontSize: '0.86rem', marginBottom: '20px' }}>
+                Ashuu swung through the skyline like a true cyber hero! Distance: {distance}m • Points: {score}.
               </p>
               <button
-                onClick={() => {
+                onClick={(e) => {
+                  e.stopPropagation();
                   soundSystem.playClick();
-                  onBack();
+                  onComplete(score);
                 }}
-                className="btn-primary-glow pulse-glow"
-                style={{ width: '100%', padding: '14px', fontSize: '1.05rem', marginBottom: '10px' }}
+                className="btn-cyber-primary"
+                style={{ width: '100%', padding: '14px' }}
               >
-                BACK TO ARCADE
+                <span>[ PROCEED TO NEXT LEVEL ➔ ]</span>
               </button>
             </div>
           </div>
         )}
       </div>
 
-      <div style={{ marginTop: '12px', color: '#94a3b8', fontSize: '0.82rem', textAlign: 'center' }}>
-        Press & Hold anywhere to latch a web; release to fly through the sky!
+      <div style={{ marginTop: '12px', color: '#9e646d', fontSize: '0.78rem', textAlign: 'center' }}>
+        Tap screen, click, or press Space to swing forward to the next web!
       </div>
     </div>
   );
 };
+
+export default SpiderWebSwingGame;

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Play, Pause, Volume2, VolumeX, Disc3, Music2, Cpu } from 'lucide-react';
+import { Play, Pause, Volume2, VolumeX, Disc3, Music2 } from 'lucide-react';
 import { useAudio } from '../../utils/useAudio';
 import { BIRTHDAY_CONFIG } from '../../config/birthdayConfig';
 
@@ -10,7 +10,6 @@ export const AudioPlayer: React.FC = () => {
     duration,
     volume,
     isMuted,
-    isUsingSynth,
     togglePlay,
     seek,
     setVolume,
@@ -43,8 +42,8 @@ export const AudioPlayer: React.FC = () => {
         width: '100%',
         maxWidth: '540px',
         padding: '20px 24px',
-        border: '1px solid rgba(0, 255, 102, 0.4)',
-        boxShadow: '0 0 30px rgba(0, 255, 102, 0.15)',
+        border: '1px solid rgba(255, 42, 75, 0.4)',
+        boxShadow: '0 0 30px rgba(255, 42, 75, 0.2)',
         position: 'relative',
         overflow: 'hidden',
         fontFamily: 'var(--font-mono)',
@@ -57,13 +56,13 @@ export const AudioPlayer: React.FC = () => {
             width: '46px',
             height: '46px',
             borderRadius: '4px',
-            background: 'rgba(0, 255, 102, 0.1)',
-            border: '1px solid #00ff66',
+            background: 'rgba(255, 42, 75, 0.12)',
+            border: '1px solid #ff2a4b',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: '#00ff66',
-            boxShadow: isPlaying ? '0 0 16px rgba(0, 255, 102, 0.5)' : 'none',
+            color: '#ff2a4b',
+            boxShadow: isPlaying ? '0 0 16px rgba(255, 42, 75, 0.5)' : 'none',
             flexShrink: 0,
           }}
         >
@@ -75,7 +74,7 @@ export const AudioPlayer: React.FC = () => {
             style={{
               fontSize: '0.94rem',
               fontWeight: 800,
-              color: '#e2fce8',
+              color: '#fff',
               whiteSpace: 'nowrap',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
@@ -86,7 +85,7 @@ export const AudioPlayer: React.FC = () => {
           <div
             style={{
               fontSize: '0.78rem',
-              color: '#00ff66',
+              color: '#ffb703',
               fontWeight: 600,
               whiteSpace: 'nowrap',
               overflow: 'hidden',
@@ -95,14 +94,6 @@ export const AudioPlayer: React.FC = () => {
           >
             {BIRTHDAY_CONFIG.songArtist}
           </div>
-        </div>
-
-        {/* Dancing Visualizer Bars */}
-        <div className={`equalizer-bars ${!isPlaying ? 'equalizer-paused' : ''}`}>
-          <div className="eq-bar" style={{ background: '#00ff66' }} />
-          <div className="eq-bar" style={{ background: '#00e5ff' }} />
-          <div className="eq-bar" style={{ background: '#00ff66' }} />
-          <div className="eq-bar" style={{ background: '#00e5ff' }} />
         </div>
       </div>
 
@@ -119,7 +110,7 @@ export const AudioPlayer: React.FC = () => {
             style={{
               width: '100%',
               height: '6px',
-              background: `linear-gradient(to right, #00ff66 ${progressPercent}%, rgba(255,255,255,0.1) ${progressPercent}%)`,
+              background: `linear-gradient(to right, #ff2a4b ${progressPercent}%, rgba(255,255,255,0.1) ${progressPercent}%)`,
               borderRadius: '2px',
               position: 'relative',
               zIndex: 2,
@@ -132,7 +123,7 @@ export const AudioPlayer: React.FC = () => {
             display: 'flex',
             justifyContent: 'space-between',
             fontSize: '0.75rem',
-            color: '#5c7866',
+            color: '#9e646d',
             fontFamily: 'monospace',
           }}
         >
@@ -150,13 +141,13 @@ export const AudioPlayer: React.FC = () => {
         >
           {isPlaying ? (
             <>
-              <Pause size={16} fill="#05070a" />
-              <span>[ PAUSE AUDIO ]</span>
+              <Pause size={16} fill="#050508" />
+              <span>[ PAUSE MUSIC ]</span>
             </>
           ) : (
             <>
-              <Play size={16} fill="#05070a" />
-              <span>[ PLAY ANTHEM ]</span>
+              <Play size={16} fill="#050508" />
+              <span>[ PLAY MUSIC ]</span>
             </>
           )}
         </button>
@@ -164,7 +155,7 @@ export const AudioPlayer: React.FC = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <button
             onClick={toggleMute}
-            style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: isMuted ? '#ff3344' : '#00ff66' }}
+            style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: isMuted ? '#9e646d' : '#ff2a4b' }}
             title={isMuted ? 'Unmute' : 'Mute'}
           >
             {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
@@ -181,12 +172,6 @@ export const AudioPlayer: React.FC = () => {
           />
         </div>
       </div>
-
-      {isUsingSynth && (
-        <div style={{ marginTop: '12px', fontSize: '0.72rem', color: '#5c7866', textAlign: 'center' }}>
-          Synthesized cyber audio engine active // Replace with custom MP3 in <code>public/audio/</code> anytime
-        </div>
-      )}
     </div>
   );
 };

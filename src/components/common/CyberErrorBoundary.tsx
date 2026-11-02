@@ -94,9 +94,12 @@ export class CyberErrorBoundary extends Component<Props, State> {
                   textAlign: 'left',
                   overflowX: 'auto',
                   marginBottom: '24px',
+                  whiteSpace: 'pre-wrap',
+                  wordBreak: 'break-word',
                 }}
               >
                 {this.state.error.toString()}
+                {this.state.error.stack ? `\n\nStack:\n${this.state.error.stack}` : ''}
               </pre>
             )}
 

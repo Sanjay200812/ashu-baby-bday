@@ -1,21 +1,21 @@
 /* ====================================================================
-   SOUTH DEV // BIRTHDAY SYSTEM BREACH — MASTER TERMINAL STYLESHEET
-   Pure Cyber-Hacking Terminal Visual Identity
+   SOUTH DEV // BIRTHDAY SYSTEM BREACH — RED & BLACK CYBER CELEBRATION
+   Created by Aakash & Sanjay for Ashu (South Dev)
    ==================================================================== */
 
 :root {
-  --neon-green: #00ff66;
-  --neon-green-glow: rgba(0, 255, 102, 0.55);
-  --neon-cyan: #00e5ff;
-  --neon-cyan-glow: rgba(0, 229, 255, 0.45);
-  --alert-red: #ff3344;
-  --alert-red-glow: rgba(255, 51, 68, 0.5);
-  --amber-warn: #ffb703;
-  --terminal-bg: #05070a;
-  --terminal-surface: rgba(8, 12, 18, 0.88);
-  --terminal-border: rgba(0, 255, 102, 0.3);
-  --terminal-text: #e2fce8;
-  --terminal-dim: #5c7866;
+  --neon-red: #ff2a4b;
+  --neon-red-glow: rgba(255, 42, 75, 0.55);
+  --neon-crimson: #ff1744;
+  --neon-gold: #ffb703;
+  --neon-gold-glow: rgba(255, 183, 3, 0.45);
+  --alert-red: #ff2a4b;
+  --alert-red-glow: rgba(255, 42, 75, 0.6);
+  --terminal-bg: #050508;
+  --terminal-surface: rgba(14, 10, 14, 0.92);
+  --terminal-border: rgba(255, 42, 75, 0.35);
+  --terminal-text: #fff0f2;
+  --terminal-dim: #9e646d;
   --font-mono: 'Fira Code', 'Share Tech Mono', 'JetBrains Mono', monospace;
   --font-heading: 'JetBrains Mono', 'Fira Code', monospace;
   --font-pixel: 'Press Start 2P', monospace;
@@ -33,29 +33,13 @@ html, body {
   width: 100%;
   height: 100%;
   overflow-x: hidden;
-  background-color: var(--terminal-bg);
-  background-image:
-    radial-gradient(circle at 50% 0%, rgba(0, 255, 102, 0.08) 0%, transparent 60%),
-    linear-gradient(rgba(0, 255, 102, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 255, 102, 0.03) 1px, transparent 1px);
-  background-size: 100% 100%, 32px 32px, 32px 32px;
+  background-color: #050508;
+  /* Deep atmospheric background with subtle radial glow - NO grid lines or graphs! */
+  background-image: radial-gradient(circle at 50% 10%, rgba(255, 42, 75, 0.12) 0%, transparent 65%);
   background-attachment: fixed;
   color: var(--terminal-text);
   font-family: var(--font-mono);
   touch-action: manipulation;
-}
-
-/* Subtle CRT Scanline Overlay */
-body::after {
-  content: " ";
-  display: block;
-  position: fixed;
-  top: 0; left: 0; bottom: 0; right: 0;
-  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
-  background-size: 100% 4px;
-  z-index: 999;
-  pointer-events: none;
-  opacity: 0.6;
 }
 
 #root {
@@ -65,15 +49,15 @@ body::after {
   position: relative;
 }
 
-/* ================= GLITCH & NEON EFFECTS ================= */
-.text-neon-green {
-  color: var(--neon-green);
-  text-shadow: 0 0 10px var(--neon-green-glow), 0 0 20px rgba(0, 255, 102, 0.3);
+/* ================= GLITCH & NEON RED EFFECTS ================= */
+.text-neon-red {
+  color: var(--neon-red);
+  text-shadow: 0 0 10px var(--neon-red-glow), 0 0 20px rgba(255, 42, 75, 0.35);
 }
 
-.text-neon-cyan {
-  color: var(--neon-cyan);
-  text-shadow: 0 0 10px var(--neon-cyan-glow);
+.text-neon-gold {
+  color: var(--neon-gold);
+  text-shadow: 0 0 10px var(--neon-gold-glow);
 }
 
 .text-alert-red {
@@ -107,7 +91,7 @@ body::after {
 
 .glitch-text:hover::after {
   left: 2px;
-  text-shadow: -2px 0 var(--neon-cyan);
+  text-shadow: -2px 0 var(--neon-gold);
   clip: rect(20px, 9999px, 60px, 0);
   animation: glitch-anim-2 2.5s infinite linear alternate-reverse;
 }
@@ -129,13 +113,13 @@ body::after {
   100% { clip: rect(5px, 9999px, 25px, 0); }
 }
 
-/* ================= CYBER TERMINAL PANELS ================= */
+/* ================= CYBER RED TERMINAL PANELS ================= */
 .terminal-panel {
   background: var(--terminal-surface);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   border: 1px solid var(--terminal-border);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.85), 0 0 25px rgba(0, 255, 102, 0.12);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.9), 0 0 25px rgba(255, 42, 75, 0.18);
   border-radius: 8px;
   position: relative;
 }
@@ -145,12 +129,12 @@ body::after {
   align-items: center;
   justify-content: space-between;
   padding: 8px 14px;
-  background: rgba(0, 255, 102, 0.08);
-  border-bottom: 1px solid rgba(0, 255, 102, 0.25);
+  background: rgba(255, 42, 75, 0.08);
+  border-bottom: 1px solid rgba(255, 42, 75, 0.25);
   font-size: 0.78rem;
   font-weight: 700;
   letter-spacing: 0.08em;
-  color: var(--neon-green);
+  color: var(--neon-red);
   text-transform: uppercase;
 }
 
@@ -165,18 +149,18 @@ body::after {
   border-radius: 50%;
 }
 
-.dot-red { background: #ff3344; box-shadow: 0 0 6px #ff3344; }
+.dot-red { background: #ff2a4b; box-shadow: 0 0 6px #ff2a4b; }
 .dot-yellow { background: #ffb703; box-shadow: 0 0 6px #ffb703; }
-.dot-green { background: #00ff66; box-shadow: 0 0 6px #00ff66; }
+.dot-green { background: #ff6b81; box-shadow: 0 0 6px #ff6b81; }
 
-/* ================= TERMINAL BUTTONS ================= */
+/* ================= BUTTONS ================= */
 .btn-cyber-primary {
-  background: rgba(0, 255, 102, 0.12);
-  color: var(--neon-green);
-  border: 1px solid var(--neon-green);
+  background: rgba(255, 42, 75, 0.16);
+  color: #fff;
+  border: 1px solid var(--neon-red);
   font-family: var(--font-mono);
   font-weight: 700;
-  font-size: 1rem;
+  font-size: 0.95rem;
   letter-spacing: 0.08em;
   padding: 12px 28px;
   border-radius: 4px;
@@ -185,15 +169,15 @@ body::after {
   align-items: center;
   justify-content: center;
   gap: 10px;
-  box-shadow: 0 0 16px rgba(0, 255, 102, 0.3);
+  box-shadow: 0 0 20px rgba(255, 42, 75, 0.35);
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   text-transform: uppercase;
 }
 
 .btn-cyber-primary:hover {
-  background: var(--neon-green);
-  color: #05070a;
-  box-shadow: 0 0 30px var(--neon-green-glow);
+  background: var(--neon-red);
+  color: #050508;
+  box-shadow: 0 0 35px var(--neon-red-glow);
   transform: translateY(-2px);
 }
 
@@ -202,16 +186,16 @@ body::after {
 }
 
 .btn-cyber-red {
-  background: rgba(255, 51, 68, 0.14);
-  color: var(--alert-red);
-  border: 1px solid var(--alert-red);
-  box-shadow: 0 0 16px rgba(255, 51, 68, 0.3);
+  background: rgba(255, 42, 75, 0.22);
+  color: #ff4d6d;
+  border: 1px solid #ff2a4b;
+  box-shadow: 0 0 16px rgba(255, 42, 75, 0.3);
 }
 
 .btn-cyber-red:hover {
-  background: var(--alert-red);
-  color: #05070a;
-  box-shadow: 0 0 30px var(--alert-red-glow);
+  background: #ff2a4b;
+  color: #050508;
+  box-shadow: 0 0 30px var(--neon-red-glow);
 }
 
 .btn-cyber-secondary {
@@ -232,10 +216,10 @@ body::after {
 }
 
 .btn-cyber-secondary:hover {
-  background: rgba(0, 229, 255, 0.12);
-  border-color: var(--neon-cyan);
-  color: var(--neon-cyan);
-  box-shadow: 0 0 16px var(--neon-cyan-glow);
+  background: rgba(255, 42, 75, 0.12);
+  border-color: var(--neon-red);
+  color: #fff;
+  box-shadow: 0 0 16px rgba(255, 42, 75, 0.3);
 }
 
 /* ================= BLINKING TERMINAL CURSOR ================= */
@@ -243,10 +227,10 @@ body::after {
   display: inline-block;
   width: 8px;
   height: 1.1em;
-  background: var(--neon-green);
+  background: var(--neon-red);
   vertical-align: -0.15em;
   animation: cursorBlink 0.9s infinite step-start;
-  box-shadow: 0 0 8px var(--neon-green);
+  box-shadow: 0 0 8px var(--neon-red);
 }
 
 @keyframes cursorBlink {
@@ -254,35 +238,54 @@ body::after {
 }
 
 /* ================= PULSE CYBER GLOW ================= */
-@keyframes cyberPulse {
+@keyframes cyberPulseRed {
   0%, 100% {
-    box-shadow: 0 0 16px var(--neon-green-glow);
+    box-shadow: 0 0 16px var(--neon-red-glow);
   }
   50% {
-    box-shadow: 0 0 32px var(--neon-green-glow), 0 0 45px rgba(0, 229, 255, 0.4);
+    box-shadow: 0 0 32px var(--neon-red-glow), 0 0 45px rgba(255, 183, 3, 0.3);
   }
 }
 
 .pulse-cyber {
-  animation: cyberPulse 2s infinite ease-in-out;
+  animation: cyberPulseRed 2s infinite ease-in-out;
 }
 
 /* ================= GAME CANVAS FRAME ================= */
 .game-canvas-wrapper {
   position: relative;
   width: 100%;
-  max-width: 480px;
-  height: 640px;
+  max-width: 440px;
+  height: 620px;
   margin: 0 auto;
   border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.9), 0 0 30px rgba(0, 255, 102, 0.2);
-  border: 2px solid var(--neon-green);
-  background: #020305;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.95), 0 0 30px rgba(255, 42, 75, 0.25);
+  border: 2px solid var(--neon-red);
+  background: #020204;
 }
 
 @media (max-width: 520px) {
   .game-canvas-wrapper {
     height: 75vh;
   }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #050508;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #ff2a4b;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #ff6b81;
 }

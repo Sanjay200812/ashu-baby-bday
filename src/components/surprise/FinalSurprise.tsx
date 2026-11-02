@@ -4,50 +4,50 @@ import confetti from 'canvas-confetti';
 import {
   Sparkles,
   RotateCcw,
-  ArrowLeft,
   Flame,
   Wind,
-  Terminal,
-  Share2,
-  Check,
-  Cpu,
+  Download,
   Heart,
-  Video,
-  Film,
+  Gift,
+  CheckCircle2,
+  ArrowLeft,
 } from 'lucide-react';
 import { BIRTHDAY_CONFIG } from '../../config/birthdayConfig';
 import { soundSystem } from '../../utils/audioSystem';
-import { AudioPlayer } from './AudioPlayer';
 
 interface FinalSurpriseProps {
+  selectedGiftIds?: string[];
   onReplayAll: () => void;
-  onBackToArcade: () => void;
-  onOpenFoodie?: () => void;
-  onOpenSkills?: () => void;
+  onBack?: () => void;
 }
 
 export const FinalSurprise: React.FC<FinalSurpriseProps> = ({
+  selectedGiftIds = [],
   onReplayAll,
-  onBackToArcade,
-  onOpenFoodie,
-  onOpenSkills,
+  onBack,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
-  const photoRef = useRef<HTMLDivElement>(null);
   const letterRef = useRef<HTMLDivElement>(null);
 
   const [candlesLit, setCandlesLit] = useState<boolean>(true);
-  const [copied, setCopied] = useState<boolean>(false);
+
+  // Map selected gifts safely (only 1 selected gift as requested)
+  const safeIds = Array.isArray(selectedGiftIds) ? selectedGiftIds : [];
+  const selectedGift = (BIRTHDAY_CONFIG.availableGifts || []).find((g) =>
+    safeIds.includes(g.id)
+  ) || BIRTHDAY_CONFIG.availableGifts[0];
 
   useEffect(() => {
-    // Cyber digital confetti
+    // Keep website background music playing
+    soundSystem.playSiteMusic();
+
     const launchConfetti = () => {
       confetti({
-        particleCount: 90,
-        spread: 90,
+        particleCount: 160,
+        spread: 100,
         origin: { y: 0.35, x: 0.5 },
-        colors: ['#00ff66', '#00e5ff', '#ff3344', '#ffffff', '#ffd700'],
+        colors: ['#ff2a4b', '#ffb703', '#ffffff', '#ff1744'],
       });
     };
 
@@ -59,20 +59,13 @@ export const FinalSurprise: React.FC<FinalSurpriseProps> = ({
     tl.fromTo(
       cardRef.current,
       { opacity: 0, y: 50, scale: 0.94 },
-      { opacity: 1, y: 0, scale: 1, duration: 1.2 }
-    )
-      .fromTo(
-        photoRef.current,
-        { opacity: 0, scale: 0.8, rotate: -4 },
-        { opacity: 1, scale: 1, rotate: 0, duration: 1, ease: 'back.out(1.5)' },
-        '-=0.7'
-      )
-      .fromTo(
-        letterRef.current,
-        { opacity: 0, y: 30 },
-        { opacity: 1, y: 0, duration: 0.9 },
-        '-=0.5'
-      );
+      { opacity: 1, y: 0, scale: 1, duration: 1.1 }
+    ).fromTo(
+      letterRef.current,
+      { opacity: 0, y: 30 },
+      { opacity: 1, y: 0, duration: 0.8 },
+      '-=0.5'
+    );
 
     return () => clearTimeout(timer);
   }, []);
@@ -83,10 +76,10 @@ export const FinalSurprise: React.FC<FinalSurpriseProps> = ({
       setCandlesLit(false);
 
       confetti({
-        particleCount: 160,
+        particleCount: 180,
         spread: 110,
         origin: { y: 0.6 },
-        colors: ['#00ff66', '#00e5ff', '#ffffff', '#ffd700'],
+        colors: ['#ff2a4b', '#ffb703', '#ffffff', '#ff1744'],
       });
     } else {
       soundSystem.playScore();
@@ -97,21 +90,32 @@ export const FinalSurprise: React.FC<FinalSurpriseProps> = ({
   const handleConfettiShower = () => {
     soundSystem.playVictory();
     confetti({
-      particleCount: 110,
-      spread: 85,
+      particleCount: 160,
+      spread: 100,
       origin: { y: 0.5 },
-      colors: ['#00ff66', '#00e5ff', '#ff3344', '#ffd700'],
+      colors: ['#ff2a4b', '#ffb703', '#ffffff', '#ff1744'],
     });
   };
 
-  const handleShareCard = () => {
-    soundSystem.playClick();
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(
-        `Happy Birthday South Dev! 🎉 Check out your personalized cyber intrusion surprise created by Aakash & Sanjay: ${window.location.origin}`
-      );
-      setCopied(true);
-      setTimeout(() => setCopied(false), 3000);
+  const handleDownloadCard = async () => {
+    soundSystem.playVictory();
+    try {
+      const response = await fetch(BIRTHDAY_CONFIG.bgCardUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'Ashu_Birthday_Card.png';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch {
+      const link = document.createElement('a');
+      link.href = BIRTHDAY_CONFIG.bgCardUrl;
+      link.download = 'Ashu_Birthday_Card.png';
+      link.target = '_blank';
+      link.click();
     }
   };
 
@@ -133,162 +137,97 @@ export const FinalSurprise: React.FC<FinalSurpriseProps> = ({
         justifyContent: 'center',
         zIndex: 10,
         fontFamily: 'var(--font-mono)',
+        backgroundColor: '#050508',
       }}
     >
-      {/* Top Navigation */}
+      {/* Top Header / Actions */}
       <div
         style={{
           width: '100%',
-          maxWidth: '700px',
+          maxWidth: '740px',
           display: 'flex',
-          justifyContent: 'space-between',
           alignItems: 'center',
-          marginBottom: '20px',
-          flexWrap: 'wrap',
-          gap: '10px',
+          justifyContent: 'space-between',
+          marginBottom: '16px',
         }}
       >
+        {onBack ? (
+          <button
+            onClick={() => {
+              soundSystem.playClick();
+              onBack();
+            }}
+            className="btn-cyber-secondary"
+            style={{ padding: '6px 14px', fontSize: '0.78rem' }}
+          >
+            <ArrowLeft size={14} />
+            <span>BACK</span>
+          </button>
+        ) : (
+          <div />
+        )}
+
         <button
-          onClick={() => {
-            soundSystem.playClick();
-            onBackToArcade();
-          }}
-          className="btn-cyber-secondary"
-          style={{ padding: '8px 16px', fontSize: '0.82rem' }}
+          onClick={handleConfettiShower}
+          className="btn-cyber-primary pulse-cyber"
+          style={{ padding: '8px 18px', fontSize: '0.82rem' }}
         >
-          <ArrowLeft size={15} />
-          <span>[ ARCADE_HUB ]</span>
+          <Sparkles size={14} />
+          <span>[ CELEBRATE 💥 ]</span>
         </button>
-
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <button
-            onClick={handleShareCard}
-            className="btn-cyber-secondary"
-            style={{ padding: '8px 14px', fontSize: '0.82rem', borderColor: '#00e5ff', color: '#00e5ff' }}
-          >
-            {copied ? <Check size={14} /> : <Share2 size={14} />}
-            <span>{copied ? '[ LINK COPIED ]' : '[ SHARE CARD ]'}</span>
-          </button>
-
-          <button
-            onClick={handleConfettiShower}
-            className="btn-cyber-secondary"
-            style={{ padding: '8px 14px', fontSize: '0.82rem', borderColor: '#00ff66', color: '#00ff66' }}
-          >
-            <Sparkles size={14} />
-            <span>[ CYBER SPARKS ]</span>
-          </button>
-        </div>
       </div>
 
-      {/* Main Cyber Birthday Card Terminal */}
+      {/* Main Birthday Card */}
       <div
         ref={cardRef}
         className="terminal-panel"
         style={{
           width: '100%',
-          maxWidth: '700px',
-          padding: 'clamp(28px, 6vw, 48px)',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
+          maxWidth: '740px',
+          padding: '40px 24px',
           textAlign: 'center',
-          border: '1px solid #00ff66',
-          boxShadow: '0 0 50px rgba(0, 255, 102, 0.25)',
-          position: 'relative',
+          border: '2px solid #ff2a4b',
+          boxShadow: '0 0 60px rgba(255, 42, 75, 0.5)',
+          borderRadius: '16px',
+          backgroundColor: '#0a0508',
         }}
       >
-        {/* Terminal Card Tag */}
+        {/* Large Original bg-card Birthday Card (Original proportions & high quality) */}
         <div
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '8px',
-            background: 'rgba(0, 255, 102, 0.08)',
-            border: '1px solid #00ff66',
-            borderRadius: '4px',
-            padding: '4px 14px',
-            fontSize: '0.78rem',
-            fontWeight: 800,
-            color: '#00ff66',
-            marginBottom: '24px',
-          }}
-        >
-          <Cpu size={14} />
-          <span>SECURITY OVERRIDE COMPLETE // BIRTHDAY CARD DECRYPTED</span>
-        </div>
-
-        {/* Ashu's Photo in Cyber Frame */}
-        <div
-          ref={photoRef}
           style={{
             position: 'relative',
-            width: '170px',
-            height: '170px',
-            margin: '0 auto 28px',
+            width: '100%',
+            borderRadius: '12px',
+            overflow: 'hidden',
+            border: '2px solid rgba(255, 42, 75, 0.7)',
+            boxShadow: '0 0 50px rgba(255, 42, 75, 0.45)',
+            marginBottom: '32px',
+            backgroundColor: '#050508',
           }}
         >
-          {/* Animated Neon Green Rotating Ring */}
-          <div
+          <img
+            src={BIRTHDAY_CONFIG.bgCardUrl}
+            alt="South Dev Birthday Card"
             style={{
-              position: 'absolute',
-              inset: -6,
-              borderRadius: '50%',
-              background: 'conic-gradient(from 0deg, #00ff66, #00e5ff, #ff3344, #00ff66)',
-              filter: 'blur(10px)',
-              opacity: 0.7,
-              animation: 'spin 10s linear infinite',
+              width: '100%',
+              height: 'auto',
+              maxHeight: '560px',
+              objectFit: 'contain',
+              display: 'block',
+              margin: '0 auto',
             }}
           />
-
-          {/* Photo Frame */}
-          <div
-            style={{
-              position: 'relative',
-              width: '100%',
-              height: '100%',
-              borderRadius: '50%',
-              overflow: 'hidden',
-              border: '3px solid #00ff66',
-              boxShadow: '0 0 25px rgba(0, 255, 102, 0.6)',
-              background: '#05070a',
-            }}
-          >
-            <img
-              src={BIRTHDAY_CONFIG.photoUrl}
-              alt={BIRTHDAY_CONFIG.personName}
-              style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-                display: 'block',
-              }}
-            />
-          </div>
-
-          <div
-            style={{
-              position: 'absolute',
-              top: -24,
-              left: '50%',
-              transform: 'translateX(-50%)',
-              fontSize: '2rem',
-              filter: 'drop-shadow(0 0 10px #00ff66)',
-            }}
-          >
-            👑
-          </div>
         </div>
 
-        {/* Cyber Title */}
+        {/* Heading in Tenglish */}
         <h1
-          className="text-neon-green glitch-text"
+          className="text-neon-red glitch-text"
           data-text={BIRTHDAY_CONFIG.surpriseHeading}
           style={{
             fontSize: 'clamp(1.8rem, 4.8vw, 2.7rem)',
             fontWeight: 900,
             lineHeight: 1.2,
-            marginBottom: '10px',
+            marginBottom: '8px',
           }}
         >
           {BIRTHDAY_CONFIG.surpriseHeading}
@@ -296,20 +235,19 @@ export const FinalSurprise: React.FC<FinalSurpriseProps> = ({
 
         <p
           style={{
-            color: '#00e5ff',
+            color: '#ffb703',
             fontSize: 'clamp(0.88rem, 2.5vw, 1.05rem)',
-            fontWeight: 600,
-            marginBottom: '32px',
-            maxWidth: '540px',
+            fontWeight: 700,
+            marginBottom: '28px',
           }}
         >
           {BIRTHDAY_CONFIG.surpriseSubheading}
         </p>
 
-        {/* Cyber-Themed Birthday Cake */}
+        {/* Interactive Cyber Cake */}
         <div
           style={{
-            margin: '0 auto 36px',
+            margin: '0 auto 30px',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
@@ -326,7 +264,7 @@ export const FinalSurprise: React.FC<FinalSurpriseProps> = ({
               justifyContent: 'flex-end',
             }}
           >
-            {/* Cyber Laser Candles */}
+            {/* Candles */}
             <div style={{ display: 'flex', gap: '34px', marginBottom: '4px', position: 'relative', zIndex: 3 }}>
               {[0, 1, 2].map((i) => (
                 <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -336,9 +274,8 @@ export const FinalSurprise: React.FC<FinalSurpriseProps> = ({
                         width: '10px',
                         height: '20px',
                         borderRadius: '50% 50% 30% 30%',
-                        background: 'radial-gradient(ellipse at 50% 60%, #ffffff 0%, #00ff66 40%, #00e5ff 90%)',
-                        boxShadow: '0 0 16px #00ff66, 0 0 30px #00e5ff',
-                        animation: `cyberFlame ${0.5 + i * 0.15}s infinite alternate ease-in-out`,
+                        background: 'radial-gradient(ellipse at 50% 60%, #ffffff 0%, #ffb703 40%, #ff2a4b 90%)',
+                        boxShadow: '0 0 16px #ff2a4b, 0 0 28px #ffb703',
                       }}
                     />
                   ) : (
@@ -346,77 +283,64 @@ export const FinalSurprise: React.FC<FinalSurpriseProps> = ({
                       style={{
                         width: '3px',
                         height: '10px',
-                        background: '#5c7866',
+                        background: '#9e646d',
                         borderRadius: '2px',
                         opacity: 0.6,
                       }}
                     />
                   )}
-                  {/* Neon Candle Node */}
                   <div
                     style={{
                       width: '6px',
                       height: '24px',
-                      background: 'repeating-linear-gradient(45deg, #00ff66, #00ff66 3px, #00e5ff 3px, #00e5ff 6px)',
-                      borderRadius: '2px 2px 0 0',
+                      background: 'repeating-linear-gradient(45deg, #ff2a4b, #ff2a4b 3px, #ffb703 3px, #ffb703 6px)',
+                      borderRadius: '2px',
                     }}
                   />
                 </div>
               ))}
             </div>
 
-            {/* Cake Top Tier */}
+            {/* Top Tier */}
             <div
               style={{
                 width: '140px',
-                height: '36px',
-                background: '#0a141b',
-                borderRadius: '4px',
-                border: '1.5px solid #00ff66',
-                boxShadow: '0 0 14px rgba(0, 255, 102, 0.4)',
-                position: 'relative',
-                zIndex: 2,
+                height: '38px',
+                background: 'linear-gradient(180deg, #2a0b14 0%, #16060a 100%)',
+                border: '1.5px solid #ff2a4b',
+                borderRadius: '6px 6px 0 0',
+                boxShadow: '0 0 15px rgba(255, 42, 75, 0.4)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '0.75rem',
-                color: '#00ff66',
-                fontWeight: 800,
+                position: 'relative',
+                zIndex: 2,
               }}
             >
-              LEVEL_21 // UNLOCKED
+              <span style={{ fontSize: '0.74rem', fontWeight: 800, color: '#ffb703', letterSpacing: '0.12em' }}>
+                LEVEL 20+
+              </span>
             </div>
 
-            {/* Cake Bottom Tier */}
+            {/* Bottom Tier */}
             <div
               style={{
                 width: '190px',
                 height: '48px',
-                background: '#060a0f',
-                borderRadius: '4px',
-                border: '1.5px solid #00e5ff',
-                boxShadow: '0 0 20px rgba(0, 229, 255, 0.3)',
-                position: 'relative',
-                zIndex: 1,
-                marginTop: '-2px',
+                background: 'linear-gradient(180deg, #330d18 0%, #1a060c 100%)',
+                border: '2px solid #ff2a4b',
+                borderRadius: '8px 8px 0 0',
+                boxShadow: '0 0 25px rgba(255, 42, 75, 0.5)',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'space-around',
-                padding: '0 16px',
+                justifyContent: 'center',
+                position: 'relative',
+                zIndex: 1,
               }}
             >
-              {[...Array(6)].map((_, idx) => (
-                <div
-                  key={idx}
-                  style={{
-                    width: '6px',
-                    height: '6px',
-                    borderRadius: '50%',
-                    background: '#00ff66',
-                    boxShadow: '0 0 8px #00ff66',
-                  }}
-                />
-              ))}
+              <span style={{ fontSize: '0.8rem', fontWeight: 900, color: '#fff', letterSpacing: '0.1em' }}>
+                SOUTH DEV 🎂
+              </span>
             </div>
           </div>
 
@@ -424,17 +348,17 @@ export const FinalSurprise: React.FC<FinalSurpriseProps> = ({
             onClick={handleToggleCandles}
             className="btn-cyber-secondary"
             style={{
-              marginTop: '16px',
+              marginTop: '14px',
               padding: '8px 18px',
               fontSize: '0.82rem',
-              color: candlesLit ? '#00ff66' : '#00e5ff',
-              borderColor: candlesLit ? '#00ff66' : '#00e5ff',
+              color: candlesLit ? '#ff2a4b' : '#ffb703',
+              borderColor: candlesLit ? '#ff2a4b' : '#ffb703',
             }}
           >
             {candlesLit ? (
               <>
                 <Wind size={15} />
-                <span>[ EXTINGUISH CYBER CANDLES ]</span>
+                <span>[ BLOW OUT CANDLES ]</span>
               </>
             ) : (
               <>
@@ -445,19 +369,58 @@ export const FinalSurprise: React.FC<FinalSurpriseProps> = ({
           </button>
         </div>
 
-        {/* Message Dossier */}
+        {/* Selected 1 Gift Badge */}
+        {selectedGift && (
+          <div
+            style={{
+              width: '100%',
+              maxWidth: '580px',
+              margin: '0 auto 28px',
+              background: 'rgba(18, 10, 14, 0.95)',
+              border: '1.5px solid #ffb703',
+              borderRadius: '8px',
+              padding: '16px 20px',
+              textAlign: 'center',
+            }}
+          >
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: '#ffb703', fontSize: '0.84rem', fontWeight: 800, marginBottom: '8px' }}>
+              <Gift size={16} />
+              <span>ASHUU’S CLAIMED BIRTHDAY GIFT</span>
+            </div>
+
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                background: 'rgba(255, 42, 75, 0.15)',
+                border: '1px solid #ff2a4b',
+                borderRadius: '24px',
+                padding: '8px 20px',
+                fontSize: '0.94rem',
+                fontWeight: 800,
+                color: '#fff',
+                marginTop: '4px',
+              }}
+            >
+              <CheckCircle2 size={16} color="#ffb703" />
+              <span>{selectedGift.title}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Birthday Letter in Tenglish */}
         <div
           ref={letterRef}
           style={{
             width: '100%',
-            maxWidth: '580px',
-            background: 'rgba(8, 14, 20, 0.85)',
-            border: '1px solid rgba(0, 255, 102, 0.35)',
-            borderRadius: '6px',
-            padding: '28px 24px',
+            maxWidth: '600px',
+            margin: '0 auto 32px',
+            background: 'rgba(18, 10, 14, 0.95)',
+            border: '1px solid rgba(255, 42, 75, 0.35)',
+            borderRadius: '8px',
+            padding: '26px 22px',
             textAlign: 'left',
-            marginBottom: '36px',
-            boxShadow: 'inset 0 1px 0 rgba(0, 255, 102, 0.1)',
           }}
         >
           {messageParagraphs.map((para, idx) => (
@@ -466,7 +429,7 @@ export const FinalSurprise: React.FC<FinalSurpriseProps> = ({
               style={{
                 fontSize: '0.96rem',
                 lineHeight: 1.75,
-                color: '#e2fce8',
+                color: '#fff',
                 marginBottom: '16px',
               }}
             >
@@ -474,146 +437,65 @@ export const FinalSurprise: React.FC<FinalSurpriseProps> = ({
             </p>
           ))}
 
-          {/* Signature */}
-          <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid rgba(0, 255, 102, 0.25)' }}>
+          <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid rgba(255, 42, 75, 0.25)' }}>
             <div
               style={{
                 fontSize: '1.25rem',
                 fontWeight: 900,
-                color: '#00ff66',
-                letterSpacing: '0.04em',
+                color: '#ff2a4b',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px',
               }}
             >
               <span>{BIRTHDAY_CONFIG.birthdayLetter.signature}</span>
-              <Heart size={18} fill="#ff3344" color="#ff3344" />
+              <Heart size={18} fill="#ff2a4b" color="#ff2a4b" />
             </div>
-            <div style={{ fontSize: '0.8rem', color: '#5c7866', marginTop: '4px' }}>
+            <div style={{ fontSize: '0.8rem', color: '#9e646d', marginTop: '4px' }}>
               Your forever syndicate brothers & partners-in-crime
             </div>
           </div>
         </div>
 
-        {/* Special Birthday Video Reel Archive */}
-        {BIRTHDAY_CONFIG.specialVideoUrl && (
-          <div
-            style={{
-              width: '100%',
-              maxWidth: '580px',
-              background: 'rgba(8, 14, 20, 0.92)',
-              border: '1px solid #00e5ff',
-              boxShadow: '0 0 30px rgba(0, 229, 255, 0.2)',
-              borderRadius: '8px',
-              padding: '20px',
-              marginBottom: '36px',
-              textAlign: 'center',
-            }}
+        {/* Action & Download Options placed at the end */}
+        <div style={{ display: 'flex', gap: '14px', justifyContent: 'center', flexWrap: 'wrap' }}>
+          {/* Download Birthday Card / Poster */}
+          <button
+            onClick={handleDownloadCard}
+            className="btn-cyber-primary pulse-cyber"
+            style={{ padding: '14px 24px', fontSize: '0.9rem', fontWeight: 900 }}
           >
-            <div
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                color: '#00e5ff',
-                fontSize: '0.88rem',
-                fontWeight: 800,
-                letterSpacing: '0.08em',
-                marginBottom: '14px',
-              }}
-            >
-              <Film size={18} />
-              <span>TOP_SECRET // ASHU_BIRTHDAY_REEL.MP4</span>
-            </div>
-
-            <div
-              style={{
-                position: 'relative',
-                borderRadius: '6px',
-                overflow: 'hidden',
-                background: '#000',
-                border: '1px solid rgba(0, 229, 255, 0.3)',
-                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.8)',
-              }}
-            >
-              <video
-                src={BIRTHDAY_CONFIG.specialVideoUrl}
-                controls
-                playsInline
-                preload="metadata"
-                poster={BIRTHDAY_CONFIG.photoUrl}
-                style={{
-                  width: '100%',
-                  maxHeight: '440px',
-                  display: 'block',
-                  backgroundColor: '#000',
-                }}
-              />
-            </div>
-
-            <div style={{ fontSize: '0.76rem', color: '#5c7866', marginTop: '10px' }}>
-              Recorded & assembled by Aakash & Sanjay // Press play to watch the tribute
-            </div>
-          </div>
-        )}
-
-        {/* Reusable Audio Player */}
-        <div style={{ width: '100%', display: 'flex', justifyContent: 'center', marginBottom: '32px' }}>
-          <AudioPlayer />
-        </div>
-
-        {/* Actions */}
-        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
-          {onOpenFoodie && (
-            <button
-              onClick={() => {
-                soundSystem.playClick();
-                onOpenFoodie();
-              }}
-              className="btn-cyber-secondary"
-              style={{ padding: '10px 20px', borderColor: '#f59e0b', color: '#f59e0b' }}
-            >
-              <span>🍲 [ FOOD MEMORIES ]</span>
-            </button>
-          )}
-
-          {onOpenSkills && (
-            <button
-              onClick={() => {
-                soundSystem.playClick();
-                onOpenSkills();
-              }}
-              className="btn-cyber-secondary"
-              style={{ padding: '10px 20px', borderColor: '#00e5ff', color: '#00e5ff' }}
-            >
-              <span>👑 [ ASHUU'S SKILLS ]</span>
-            </button>
-          )}
-
-          <button onClick={onBackToArcade} className="btn-cyber-secondary" style={{ padding: '10px 20px' }}>
-            <ArrowLeft size={16} />
-            <span>[ RETURN TO ARCADE ]</span>
+            <Download size={18} />
+            <span>DOWNLOAD BIRTHDAY CARD</span>
           </button>
 
-          <button onClick={onReplayAll} className="btn-cyber-primary" style={{ padding: '10px 22px' }}>
-            <RotateCcw size={16} />
-            <span>[ REBOOT SYSTEM INTRUSION ]</span>
+          {/* Download Special Video */}
+          <a
+            href={BIRTHDAY_CONFIG.specialVideoUrl}
+            download="Ashu_Birthday_Special_Video.mp4"
+            className="btn-cyber-secondary"
+            style={{ textDecoration: 'none', padding: '14px 24px', fontSize: '0.9rem', borderColor: '#ffb703', color: '#ffb703', fontWeight: 800 }}
+          >
+            <Download size={18} />
+            <span>DOWNLOAD SPECIAL VIDEO</span>
+          </a>
+
+          {/* Replay */}
+          <button
+            onClick={() => {
+              soundSystem.playClick();
+              onReplayAll();
+            }}
+            className="btn-cyber-secondary"
+            style={{ padding: '14px 24px', fontSize: '0.9rem' }}
+          >
+            <RotateCcw size={18} />
+            <span>[ REPLAY LEVELS ]</span>
           </button>
         </div>
       </div>
-
-      <style>{`
-        @keyframes cyberFlame {
-          0% { transform: scale(1) translateY(0); filter: drop-shadow(0 0 6px #00ff66); }
-          50% { transform: scale(1.1) translateY(-2px); filter: drop-shadow(0 0 14px #00e5ff); }
-          100% { transform: scale(0.95) translateY(1px); filter: drop-shadow(0 0 8px #00ff66); }
-        }
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
     </div>
   );
 };
+
+export default FinalSurprise;
