@@ -717,15 +717,33 @@ export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({ onLevelCompl
                   autoPlay
                   playsInline
                   loop
+                  preload="auto"
+                  onCanPlay={(e) => {
+                    const v = e.currentTarget;
+                    const p = v.play();
+                    if (p !== undefined) {
+                      p.catch(() => {
+                        v.muted = true;
+                        v.play().catch(() => {});
+                      });
+                    }
+                  }}
+                  onClick={(e) => {
+                    const v = e.currentTarget;
+                    v.muted = false;
+                    v.play().catch(() => {});
+                  }}
                   style={{
                     width: '100%',
                     maxHeight: '190px',
                     display: 'block',
                     backgroundColor: '#000',
                     objectFit: 'contain',
-                    pointerEvents: 'none',
+                    cursor: 'pointer',
                   }}
-                />
+                >
+                  <source src={BIRTHDAY_CONFIG.loseClipUrl} type="video/mp4" />
+                </video>
               </div>
 
               <div

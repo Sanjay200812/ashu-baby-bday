@@ -232,14 +232,33 @@ export const SleepModeGame: React.FC<SleepModeGameProps> = ({ onComplete, onBack
                 autoPlay
                 playsInline
                 loop
+                preload="auto"
+                onCanPlay={(e) => {
+                  const v = e.currentTarget;
+                  const p = v.play();
+                  if (p !== undefined) {
+                    p.catch(() => {
+                      v.muted = true;
+                      v.play().catch(() => {});
+                    });
+                  }
+                }}
+                onClick={(e) => {
+                  const v = e.currentTarget;
+                  v.muted = false;
+                  v.play().catch(() => {});
+                }}
                 style={{
                   width: '100%',
                   maxHeight: '210px',
                   display: 'block',
                   backgroundColor: '#000',
                   objectFit: 'contain',
+                  cursor: 'pointer',
                 }}
-              />
+              >
+                <source src={BIRTHDAY_CONFIG.loseClipUrl} type="video/mp4" />
+              </video>
             </div>
 
             <p style={{ color: '#cbd5e1', fontSize: '0.85rem', marginBottom: '16px', lineHeight: 1.5 }}>

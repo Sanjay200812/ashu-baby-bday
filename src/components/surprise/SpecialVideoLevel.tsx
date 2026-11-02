@@ -189,13 +189,18 @@ export const SpecialVideoLevel: React.FC<SpecialVideoLevelProps> = ({ onComplete
             onPause={handlePause}
             onTimeUpdate={handleTimeUpdate}
             onEnded={handleEnded}
+            onError={(e) => {
+              console.error('Special video error event:', e);
+            }}
             style={{
               width: '100%',
               maxHeight: '440px',
               display: 'block',
               backgroundColor: '#000',
             }}
-          />
+          >
+            <source src={BIRTHDAY_CONFIG.specialVideoUrl} type="video/mp4" />
+          </video>
         </div>
 
         {/* Level Unlock Status / Button */}

@@ -577,14 +577,33 @@ export const GtaChaosRunGame: React.FC<GtaChaosRunGameProps> = ({ onComplete, on
                   autoPlay
                   playsInline
                   loop
+                  preload="auto"
+                  onCanPlay={(e) => {
+                    const v = e.currentTarget;
+                    const p = v.play();
+                    if (p !== undefined) {
+                      p.catch(() => {
+                        v.muted = true;
+                        v.play().catch(() => {});
+                      });
+                    }
+                  }}
+                  onClick={(e) => {
+                    const v = e.currentTarget;
+                    v.muted = false;
+                    v.play().catch(() => {});
+                  }}
                   style={{
                     width: '100%',
                     maxHeight: '180px',
                     display: 'block',
                     backgroundColor: '#000',
                     objectFit: 'contain',
+                    cursor: 'pointer',
                   }}
-                />
+                >
+                  <source src={BIRTHDAY_CONFIG.loseClipUrl} type="video/mp4" />
+                </video>
               </div>
 
               <p style={{ color: '#cbd5e1', fontSize: '0.84rem', marginBottom: '14px' }}>
