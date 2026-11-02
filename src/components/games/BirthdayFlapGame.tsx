@@ -43,20 +43,18 @@ export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({ onLevelCompl
   });
   const [gameState, setGameState] = useState<'IDLE' | 'PLAYING' | 'GAMEOVER' | 'COMPLETE'>('IDLE');
 
-  // When lose clip plays, pause background music so video sound is clear; resume on retry
-  // Uses bg-music.mp3 ONLY for Game 1 (Flap Protocol)
+  // When lose clip plays, pause background video sound so video sound is clear; resume on retry
   useEffect(() => {
     if (gameState === 'GAMEOVER') {
       soundSystem.pauseMusic();
     } else if (gameState === 'PLAYING') {
-      soundSystem.playFlapMusic();
+      soundSystem.playSiteMusic();
     }
   }, [gameState]);
 
-  // When exiting Flap Game, stop bg-music.mp3 and resume bg-song.mp3
   useEffect(() => {
     return () => {
-      soundSystem.stopFlapMusicAndResumeSite();
+      soundSystem.playSiteMusic();
     };
   }, []);
 
@@ -453,7 +451,7 @@ export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({ onLevelCompl
 
         this.currentSceneState = 'IDLE';
         setGameState('IDLE');
-        soundSystem.playMusic(BIRTHDAY_CONFIG.gameBgMusicUrl);
+        soundSystem.playSiteMusic();
       }
     }
 

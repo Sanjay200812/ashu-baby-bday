@@ -130,14 +130,14 @@ export const BIRTHDAY_CONFIG: BirthdayConfig = {
   specialVideoUrl: "/videos/special-video.mp4",
   loseClipUrl: "/videos/lose-clip.mp4",
 
-  // Audio: bg-song.mp3 for site, bg-music.mp3 ONLY for first game
-  siteBgSongUrl: "/audio/bg-song.mp3",
-  gameBgMusicUrl: "/audio/bg-music.mp3",
-  birthdaySongUrl: "/audio/bg-song.mp3",
+  // Audio: Powered directly by background video (bg-video.mp4)
+  siteBgSongUrl: "/videos/bg-video.mp4",
+  gameBgMusicUrl: "/videos/bg-video.mp4",
+  birthdaySongUrl: "/videos/bg-video.mp4",
 
   ashuuSkillsImageUrl: "/images/ashuu-skills.png",
 
-  songTitle: "South Dev Cyber Anthem (bg-song.mp3)",
+  songTitle: "Nee Gunde Lona (Dude) // Background Video Theme",
   songArtist: "Injected by Aakash & Sanjay",
 
   foodiePhotos: [

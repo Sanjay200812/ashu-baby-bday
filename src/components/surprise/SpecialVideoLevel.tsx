@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
-import { Film, ArrowRight, ArrowLeft, Sparkles, CheckCircle2, Play, Pause, Volume2, VolumeX, Lock, AlertTriangle } from 'lucide-react';
+import { Film, ArrowRight, ArrowLeft, Sparkles, CheckCircle2, Play, Pause, Lock, AlertTriangle } from 'lucide-react';
 import { BIRTHDAY_CONFIG } from '../../config/birthdayConfig';
 import { soundSystem } from '../../utils/audioSystem';
 
@@ -17,7 +17,6 @@ export const SpecialVideoLevel: React.FC<SpecialVideoLevelProps> = ({ onComplete
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [currentTime, setCurrentTime] = useState<number>(0);
   const [duration, setDuration] = useState<number>(0);
-  const [isMuted, setIsMuted] = useState<boolean>(false);
   const [loadError, setLoadError] = useState<boolean>(false);
 
   // Pause background site music while video is active, resume on unmount
@@ -45,13 +44,6 @@ export const SpecialVideoLevel: React.FC<SpecialVideoLevelProps> = ({ onComplete
     } else {
       video.pause();
     }
-  };
-
-  const toggleMute = () => {
-    const video = videoRef.current;
-    if (!video) return;
-    video.muted = !video.muted;
-    setIsMuted(video.muted);
   };
 
   // Strictly disallow skipping/forwarding past watched time
@@ -353,14 +345,6 @@ export const SpecialVideoLevel: React.FC<SpecialVideoLevelProps> = ({ onComplete
             >
               {isPlaying ? <Pause size={12} /> : <Play size={12} />}
               <span>{isPlaying ? 'PAUSE' : 'PLAY'}</span>
-            </button>
-
-            <button
-              onClick={toggleMute}
-              className="btn-cyber-secondary"
-              style={{ padding: '4px 8px', fontSize: '0.74rem' }}
-            >
-              {isMuted ? <VolumeX size={12} /> : <Volume2 size={12} />}
             </button>
           </div>
         </div>

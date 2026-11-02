@@ -14,7 +14,7 @@ export const HeadphonesIntroScreen: React.FC<HeadphonesIntroScreenProps> = ({ on
   const handleStart = () => {
     soundSystem.registerUserInteraction();
     soundSystem.playVictory();
-    // Start background music (bg-song.mp3) immediately from beginning of site
+    // Start background video sound immediately from beginning of site
     soundSystem.playSiteMusic();
 
     gsap.to(containerRef.current, {

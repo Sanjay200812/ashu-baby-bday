@@ -11,10 +11,9 @@ class SoundSystem {
   private isMuted: boolean = false;
   private masterGain: GainNode | null = null;
 
-  // Real Dedicated Audio Elements for Site and Flap Game
-  private siteAudio: HTMLAudioElement | null = null;
-  private flapAudio: HTMLAudioElement | null = null;
-  public currentTrack: 'none' | 'site' | 'flap' = 'none';
+  // Reference to Background Video element powering website sound
+  private bgVideo: HTMLVideoElement | null = null;
+  public currentTrack: 'none' | 'bgvideo' = 'none';
 
   private synthLoopTimer: number | null = null;
   private isSynthPlaying: boolean = false;
@@ -33,65 +32,20 @@ class SoundSystem {
   public isUsingSynthFallback: boolean = false;
 
   constructor() {
-    if (typeof window !== 'undefined') {
-      this.initAudioElements();
+    // Zero separate audio elements loaded - background video is the sound source
+  }
+
+  public registerBgVideo(video: HTMLVideoElement) {
+    this.bgVideo = video;
+    if (this.isMusicPlaying && !this.isMuted) {
+      this.bgVideo.muted = false;
+      this.bgVideo.volume = this.volume;
+      this.bgVideo.play().catch(() => {});
     }
   }
 
-  private initAudioElements() {
-    if (typeof window === 'undefined') return;
-
-    if (!this.siteAudio) {
-      this.siteAudio = new Audio('/audio/bg-song.mp3');
-      this.siteAudio.loop = true;
-      this.siteAudio.preload = 'auto';
-      this.siteAudio.volume = this.volume;
-
-      this.siteAudio.addEventListener('timeupdate', () => {
-        if (this.currentTrack === 'site' && this.siteAudio) {
-          this.currentTime = this.siteAudio.currentTime;
-          this.duration = this.siteAudio.duration || 0;
-          this.notify();
-        }
-      });
-
-      this.siteAudio.addEventListener('loadedmetadata', () => {
-        if (this.currentTrack === 'site' && this.siteAudio) {
-          this.duration = this.siteAudio.duration || 0;
-          this.notify();
-        }
-      });
-
-      this.siteAudio.addEventListener('error', () => {
-        console.error('siteAudio error:', this.siteAudio?.error);
-      });
-    }
-
-    if (!this.flapAudio) {
-      this.flapAudio = new Audio('/audio/bg-music.mp3');
-      this.flapAudio.loop = true;
-      this.flapAudio.preload = 'auto';
-      this.flapAudio.volume = this.volume;
-
-      this.flapAudio.addEventListener('timeupdate', () => {
-        if (this.currentTrack === 'flap' && this.flapAudio) {
-          this.currentTime = this.flapAudio.currentTime;
-          this.duration = this.flapAudio.duration || 0;
-          this.notify();
-        }
-      });
-
-      this.flapAudio.addEventListener('loadedmetadata', () => {
-        if (this.currentTrack === 'flap' && this.flapAudio) {
-          this.duration = this.flapAudio.duration || 0;
-          this.notify();
-        }
-      });
-
-      this.flapAudio.addEventListener('error', () => {
-        console.error('flapAudio error:', this.flapAudio?.error);
-      });
-    }
+  public unregisterBgVideo() {
+    this.bgVideo = null;
   }
 
   private initContext() {
@@ -115,7 +69,6 @@ class SoundSystem {
   public registerUserInteraction() {
     this.hasUserInteracted = true;
     this.initContext();
-    this.initAudioElements();
   }
 
   public subscribe(listener: AudioListener): () => void {
@@ -362,124 +315,72 @@ class SoundSystem {
     }
   }
 
-  // ===================== DUAL-TRACK MUSIC SYSTEM =====================
+  // ===================== BACKGROUND VIDEO SOUNDTRACK SYSTEM =====================
 
   public playSiteMusic() {
     this.registerUserInteraction();
-    this.initAudioElements();
-
-    // Ensure Flap music is stopped
-    if (this.flapAudio && !this.flapAudio.paused) {
-      this.flapAudio.pause();
-    }
-
-    if (!this.siteAudio) return;
-
-    this.currentTrack = 'site';
+    this.currentTrack = 'bgvideo';
     this.isMusicPlaying = true;
-    this.siteAudio.volume = this.isMuted ? 0 : this.volume;
 
-    // Only play if paused so we don't glitch or restart
-    if (this.siteAudio.paused) {
-      const playPromise = this.siteAudio.play();
-      if (playPromise !== undefined) {
-        playPromise.catch((err) => {
-          console.warn('siteAudio playback pending user gesture or error:', err);
-        });
-      }
+    if (this.bgVideo) {
+      this.bgVideo.muted = this.isMuted;
+      this.bgVideo.volume = this.isMuted ? 0 : this.volume;
+      this.bgVideo.play().catch((err) => {
+        console.warn('Background video play pending gesture:', err);
+      });
     }
     this.notify();
   }
 
   public playFlapMusic() {
-    this.registerUserInteraction();
-    this.initAudioElements();
-
-    // Ensure Site music is paused
-    if (this.siteAudio && !this.siteAudio.paused) {
-      this.siteAudio.pause();
-    }
-
-    if (!this.flapAudio) return;
-
-    this.currentTrack = 'flap';
-    this.isMusicPlaying = true;
-    this.flapAudio.volume = this.isMuted ? 0 : this.volume;
-
-    if (this.flapAudio.paused) {
-      const playPromise = this.flapAudio.play();
-      if (playPromise !== undefined) {
-        playPromise.catch((err) => {
-          console.warn('flapAudio playback pending user gesture or error:', err);
-        });
-      }
-    }
-    this.notify();
-  }
-
-  public stopFlapMusicAndResumeSite() {
-    if (this.flapAudio) {
-      this.flapAudio.pause();
-      this.flapAudio.currentTime = 0;
-    }
+    // User instruction: remove bg-music and keep music of given background video
     this.playSiteMusic();
   }
 
-  public playMusic(songUrl?: string) {
-    if (typeof songUrl === 'string' && (songUrl.includes('bg-music') || songUrl.includes('flap'))) {
-      this.playFlapMusic();
-    } else {
-      this.playSiteMusic();
-    }
+  public stopFlapMusicAndResumeSite() {
+    this.playSiteMusic();
+  }
+
+  public playMusic(_songUrl?: string) {
+    this.playSiteMusic();
   }
 
   public pauseMusic() {
     this.isMusicPlaying = false;
-    if (this.siteAudio && !this.siteAudio.paused) {
-      this.siteAudio.pause();
-    }
-    if (this.flapAudio && !this.flapAudio.paused) {
-      this.flapAudio.pause();
+    if (this.bgVideo) {
+      this.bgVideo.muted = true;
     }
     this.stopSynthMelody();
     this.notify();
   }
 
   public resumeMusic() {
-    if (this.currentTrack === 'flap') {
-      this.playFlapMusic();
+    this.playSiteMusic();
+  }
+
+  public togglePlay(_songUrl?: string) {
+    if (this.isMusicPlaying) {
+      this.pauseMusic();
     } else {
       this.playSiteMusic();
     }
   }
 
-  public togglePlay(songUrl?: string) {
-    if (this.isMusicPlaying) {
-      this.pauseMusic();
-    } else {
-      this.playMusic(songUrl);
-    }
-  }
-
   public seek(timeSeconds: number) {
-    const audio = this.currentTrack === 'flap' ? this.flapAudio : this.siteAudio;
-    if (audio && audio.duration) {
-      audio.currentTime = Math.max(0, Math.min(timeSeconds, audio.duration));
-      this.currentTime = audio.currentTime;
+    if (this.bgVideo && this.bgVideo.duration) {
+      this.bgVideo.currentTime = Math.max(0, Math.min(timeSeconds, this.bgVideo.duration));
+      this.currentTime = this.bgVideo.currentTime;
       this.notify();
     }
   }
 
   public setVolume(vol: number) {
     this.volume = Math.max(0, Math.min(1, vol));
+    if (this.bgVideo) {
+      this.bgVideo.volume = this.isMuted ? 0 : this.volume;
+    }
     if (this.masterGain && this.ctx) {
       this.masterGain.gain.setValueAtTime(this.isMuted ? 0 : this.volume, this.ctx.currentTime);
-    }
-    if (this.siteAudio) {
-      this.siteAudio.volume = this.isMuted ? 0 : this.volume;
-    }
-    if (this.flapAudio) {
-      this.flapAudio.volume = this.isMuted ? 0 : this.volume;
     }
     this.notify();
   }
@@ -487,14 +388,12 @@ class SoundSystem {
   public toggleMute(): boolean {
     this.registerUserInteraction();
     this.isMuted = !this.isMuted;
+    if (this.bgVideo) {
+      this.bgVideo.muted = this.isMuted;
+      this.bgVideo.volume = this.isMuted ? 0 : this.volume;
+    }
     if (this.masterGain && this.ctx) {
       this.masterGain.gain.setValueAtTime(this.isMuted ? 0 : this.volume, this.ctx.currentTime);
-    }
-    if (this.siteAudio) {
-      this.siteAudio.muted = this.isMuted;
-    }
-    if (this.flapAudio) {
-      this.flapAudio.muted = this.isMuted;
     }
     this.notify();
     return this.isMuted;

@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { RotateCcw, AlertTriangle } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 import { BIRTHDAY_CONFIG } from '../../config/birthdayConfig';
 import { soundSystem } from '../../utils/audioSystem';
 
@@ -65,21 +65,6 @@ export const LoseClipPlayer: React.FC<LoseClipPlayerProps> = ({
     }
   };
 
-  const handleRestartClip = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    const video = videoRef.current;
-    if (!video) return;
-    video.currentTime = 0;
-    video.muted = false;
-    video
-      .play()
-      .then(() => {
-        setIsPlaying(true);
-        setLoadError(false);
-      })
-      .catch(() => {});
-  };
-
   const handleReload = (e: React.MouseEvent) => {
     e.stopPropagation();
     setLoadError(false);
@@ -131,38 +116,6 @@ export const LoseClipPlayer: React.FC<LoseClipPlayerProps> = ({
       >
         <source src={BIRTHDAY_CONFIG.loseClipUrl} type="video/mp4" />
       </video>
-
-      {/* Replay Button Only (sound toggle icon removed as requested) */}
-      {!loadError && (
-        <div
-          style={{
-            position: 'absolute',
-            top: '8px',
-            right: '8px',
-            display: 'flex',
-            gap: '6px',
-            zIndex: 10,
-          }}
-        >
-          <button
-            onClick={handleRestartClip}
-            title="Replay Clip"
-            style={{
-              background: 'rgba(5, 5, 8, 0.85)',
-              border: '1px solid rgba(255, 42, 75, 0.5)',
-              borderRadius: '4px',
-              color: '#cbd5e1',
-              padding: '4px 6px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              fontSize: '0.68rem',
-            }}
-          >
-            <RotateCcw size={13} />
-          </button>
-        </div>
-      )}
 
       {loadError && (
         <div
