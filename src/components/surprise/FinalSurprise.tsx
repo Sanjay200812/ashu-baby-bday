@@ -11,6 +11,7 @@ import {
   Gift,
   CheckCircle2,
   ArrowLeft,
+  Share2,
 } from 'lucide-react';
 import { BIRTHDAY_CONFIG } from '../../config/birthdayConfig';
 import { soundSystem } from '../../utils/audioSystem';
@@ -117,6 +118,44 @@ export const FinalSurprise: React.FC<FinalSurpriseProps> = ({
       link.target = '_blank';
       link.click();
     }
+  };
+
+  const handleShareWhatsApp = async () => {
+    soundSystem.playClick();
+    const deployedUrl = 'https://ashu-baby-bday.vercel.app';
+    const prizeText = selectedGift ? `Claimed Prize: ${selectedGift.title}! 🎁` : '';
+    const shareMessage = `🎂 Happy Birthday Ashu (SOUTH DEV)! 🔥✨\n\n${BIRTHDAY_CONFIG.birthdayLetter.message}\n\n${prizeText}\n\nCheck out Ashuu's Birthday Website here: ${deployedUrl}`;
+
+    // Try Web Share API with image file if supported
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        const response = await fetch(BIRTHDAY_CONFIG.bgCardUrl);
+        const blob = await response.blob();
+        const file = new File([blob], 'Ashu_Birthday_Card.png', { type: blob.type || 'image/png' });
+
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            title: 'Happy Birthday Ashu!',
+            text: shareMessage,
+            files: [file],
+          });
+          return;
+        } else {
+          await navigator.share({
+            title: 'Happy Birthday Ashu!',
+            text: shareMessage,
+            url: deployedUrl,
+          });
+          return;
+        }
+      } catch (err) {
+        console.log('Web Share dismissed or unavailable:', err);
+      }
+    }
+
+    // Direct WhatsApp fallback: opens WhatsApp with prefilled birthday message and link
+    const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareMessage)}`;
+    window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
   };
 
   const messageParagraphs = BIRTHDAY_CONFIG.birthdayLetter.message
@@ -469,16 +508,25 @@ export const FinalSurprise: React.FC<FinalSurpriseProps> = ({
             <span>DOWNLOAD BIRTHDAY CARD</span>
           </button>
 
-          {/* Download Special Video */}
-          <a
-            href={BIRTHDAY_CONFIG.specialVideoUrl}
-            download="Ashu_Birthday_Special_Video.mp4"
-            className="btn-cyber-secondary"
-            style={{ textDecoration: 'none', padding: '14px 24px', fontSize: '0.9rem', borderColor: '#ffb703', color: '#ffb703', fontWeight: 800 }}
+          {/* Share on WhatsApp */}
+          <button
+            onClick={handleShareWhatsApp}
+            className="btn-cyber-secondary pulse-cyber"
+            style={{
+              padding: '14px 24px',
+              fontSize: '0.9rem',
+              fontWeight: 900,
+              borderColor: '#25D366',
+              color: '#25D366',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              boxShadow: '0 0 25px rgba(37, 211, 102, 0.3)',
+            }}
           >
-            <Download size={18} />
-            <span>DOWNLOAD SPECIAL VIDEO</span>
-          </a>
+            <Share2 size={18} />
+            <span>SHARE ON WHATSAPP</span>
+          </button>
 
           {/* Replay */}
           <button

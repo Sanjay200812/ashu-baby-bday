@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import confetti from 'canvas-confetti';
-import { Film, ArrowRight, ArrowLeft, Sparkles, CheckCircle2, Play, Pause, Lock, AlertTriangle } from 'lucide-react';
+import { Film, ArrowLeft, Maximize, Minimize, CheckCircle2, Lock, AlertTriangle } from 'lucide-react';
 import { BIRTHDAY_CONFIG } from '../../config/birthdayConfig';
 import { soundSystem } from '../../utils/audioSystem';
 
@@ -10,39 +10,75 @@ interface SpecialVideoLevelProps {
 }
 
 export const SpecialVideoLevel: React.FC<SpecialVideoLevelProps> = ({ onComplete, onBack }) => {
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const maxWatchedTimeRef = useRef<number>(0);
 
   const [hasFinished, setHasFinished] = useState<boolean>(false);
-  const [isPlaying, setIsPlaying] = useState<boolean>(false);
-  const [currentTime, setCurrentTime] = useState<number>(0);
-  const [duration, setDuration] = useState<number>(0);
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [loadError, setLoadError] = useState<boolean>(false);
+  const [hasStarted, setHasStarted] = useState<boolean>(false);
 
-  // Pause background site music while video is active, resume on unmount
+  // Pause background site music while video level is active; resume on unmount
   useEffect(() => {
     soundSystem.pauseMusic();
+
+    // Attempt autoplay with sound
+    const startVideo = () => {
+      if (videoRef.current) {
+        videoRef.current
+          .play()
+          .then(() => {
+            setHasStarted(true);
+            soundSystem.pauseMusic();
+          })
+          .catch(() => {
+            // Autoplay with audio may require initial user gesture
+            setHasStarted(false);
+          });
+      }
+    };
+
+    const timer = setTimeout(startVideo, 300);
+
+    const onFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', onFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', onFullscreenChange);
+
     return () => {
+      clearTimeout(timer);
+      document.removeEventListener('fullscreenchange', onFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', onFullscreenChange);
       soundSystem.playSiteMusic();
     };
   }, []);
 
-  const handlePlay = () => {
-    setIsPlaying(true);
-    soundSystem.pauseMusic();
-  };
+  const toggleFullscreen = () => {
+    soundSystem.playClick();
+    const elem = containerRef.current;
+    if (!elem) return;
 
-  const handlePause = () => {
-    setIsPlaying(false);
-  };
-
-  const togglePlayPause = () => {
-    const video = videoRef.current;
-    if (!video) return;
-    if (video.paused) {
-      video.play().catch((err) => console.warn('Video play error:', err));
+    if (!document.fullscreenElement) {
+      if (elem.requestFullscreen) {
+        elem.requestFullscreen().catch(() => {});
+      } else if ((elem as any).webkitRequestFullscreen) {
+        (elem as any).webkitRequestFullscreen();
+      }
     } else {
-      video.pause();
+      if (document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+      } else if ((document as any).webkitExitFullscreen) {
+        (document as any).webkitExitFullscreen();
+      }
+    }
+
+    // Also ensure video starts playing if it was waiting for gesture
+    if (videoRef.current && videoRef.current.paused) {
+      videoRef.current.play().catch(() => {});
+      setHasStarted(true);
     }
   };
 
@@ -57,7 +93,6 @@ export const SpecialVideoLevel: React.FC<SpecialVideoLevelProps> = ({ onComplete
     } else {
       maxWatchedTimeRef.current = Math.max(maxWatchedTimeRef.current, current);
     }
-    setCurrentTime(video.currentTime);
   };
 
   const handleSeeking = () => {
@@ -68,19 +103,18 @@ export const SpecialVideoLevel: React.FC<SpecialVideoLevelProps> = ({ onComplete
     }
   };
 
-  const handleLoadedMetadata = () => {
-    if (!videoRef.current) return;
-    setDuration(videoRef.current.duration || 0);
-  };
-
   const handleEnded = () => {
     setHasFinished(true);
-    setIsPlaying(false);
     soundSystem.playVictory();
 
+    // If currently in fullscreen mode, exit fullscreen so user can see next level button
+    if (document.fullscreenElement && document.exitFullscreen) {
+      document.exitFullscreen().catch(() => {});
+    }
+
     confetti({
-      particleCount: 160,
-      spread: 90,
+      particleCount: 180,
+      spread: 95,
       colors: ['#ff2a4b', '#ffb703', '#ffffff', '#ff1744'],
     });
   };
@@ -92,11 +126,11 @@ export const SpecialVideoLevel: React.FC<SpecialVideoLevelProps> = ({ onComplete
     onComplete();
   };
 
-  const formatTime = (seconds: number) => {
-    if (isNaN(seconds) || seconds <= 0) return '0:00';
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+  const handleContainerTap = () => {
+    if (videoRef.current && videoRef.current.paused) {
+      videoRef.current.play().catch(() => {});
+      setHasStarted(true);
+    }
   };
 
   return (
@@ -105,9 +139,9 @@ export const SpecialVideoLevel: React.FC<SpecialVideoLevelProps> = ({ onComplete
         position: 'relative',
         minHeight: '100vh',
         width: '100%',
-        maxWidth: '780px',
+        maxWidth: '860px',
         margin: '0 auto',
-        padding: '24px 16px',
+        padding: isFullscreen ? '0' : '24px 16px',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -117,174 +151,172 @@ export const SpecialVideoLevel: React.FC<SpecialVideoLevelProps> = ({ onComplete
         backgroundColor: 'transparent',
       }}
     >
-      {/* Top Header */}
-      <div
-        style={{
-          width: '100%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: '14px',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          {onBack && (
-            <button
-              onClick={() => {
-                soundSystem.playClick();
-                soundSystem.playSiteMusic();
-                onBack();
-              }}
-              className="btn-cyber-secondary"
-              style={{ padding: '4px 10px', fontSize: '0.72rem' }}
-            >
-              <ArrowLeft size={12} />
-              <span>BACK</span>
-            </button>
-          )}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#ff2a4b', fontSize: '0.82rem', fontWeight: 800 }}>
-            <Film size={15} />
-            <span>LEVEL 8 // SPECIAL TRIBUTE REEL</span>
-          </div>
-        </div>
-
-        <div style={{ fontSize: '0.78rem', color: hasFinished ? '#ffb703' : '#9e646d', fontWeight: 700 }}>
-          {hasFinished ? '✓ REEL COMPLETE' : '⏳ WATCH TO UNLOCK'}
-        </div>
-      </div>
-
-      {/* Main Terminal Frame */}
-      <div
-        className="terminal-panel"
-        style={{
-          width: '100%',
-          border: '1.5px solid #ff2a4b',
-          boxShadow: '0 0 50px rgba(255, 42, 75, 0.45)',
-          borderRadius: '12px',
-          padding: '24px 20px',
-          textAlign: 'center',
-        }}
-      >
+      {/* Top Header - hidden in native fullscreen */}
+      {!isFullscreen && (
         <div
           style={{
-            display: 'inline-flex',
+            width: '100%',
+            display: 'flex',
             alignItems: 'center',
-            gap: '8px',
-            background: 'rgba(255, 183, 3, 0.1)',
-            border: '1px solid #ffb703',
-            borderRadius: '20px',
-            padding: '5px 16px',
-            fontSize: '0.8rem',
-            fontWeight: 800,
-            color: '#ffb703',
+            justifyContent: 'space-between',
             marginBottom: '12px',
           }}
         >
-          <Sparkles size={14} />
-          <span>ASHUU BIRTHDAY SPECIAL VIDEO</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {onBack && (
+              <button
+                onClick={() => {
+                  soundSystem.playClick();
+                  soundSystem.playSiteMusic();
+                  onBack();
+                }}
+                className="btn-cyber-secondary"
+                style={{ padding: '4px 10px', fontSize: '0.72rem' }}
+              >
+                <ArrowLeft size={12} />
+                <span>BACK</span>
+              </button>
+            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#ff2a4b', fontSize: '0.82rem', fontWeight: 800 }}>
+              <Film size={15} />
+              <span>LEVEL 8 // SPECIAL TRIBUTE REEL</span>
+            </div>
+          </div>
+
+          <div style={{ fontSize: '0.78rem', color: hasFinished ? '#ffb703' : '#9e646d', fontWeight: 700 }}>
+            {hasFinished ? '✓ REEL COMPLETE' : '🔒 FULL PLAY REQUIRED'}
+          </div>
         </div>
+      )}
 
-        <h2
-          style={{
-            fontSize: '1.35rem',
-            fontWeight: 900,
-            color: '#fff',
-            marginBottom: '6px',
-          }}
-        >
-          TRIBUTE REEL: MEMORIES & VIBES 🎬
-        </h2>
-
-        <p style={{ color: '#cbd5e1', fontSize: '0.84rem', marginBottom: '16px', lineHeight: 1.5 }}>
-          Video start avvagane background song pause avthadi. Full tribute reel chusaka Level 9 unlock avthadi!
-        </p>
-
-        {/* Video Player Box */}
+      {/* Main Container / Video Screen with only Fullscreen button */}
+      <div
+        ref={containerRef}
+        onClick={handleContainerTap}
+        className={isFullscreen ? '' : 'terminal-panel'}
+        style={{
+          position: 'relative',
+          width: '100%',
+          border: isFullscreen ? 'none' : '2px solid #ff2a4b',
+          boxShadow: isFullscreen ? 'none' : '0 0 60px rgba(255, 42, 75, 0.45)',
+          borderRadius: isFullscreen ? '0' : '14px',
+          padding: isFullscreen ? '0' : '18px',
+          backgroundColor: '#000000',
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        {/* Fullscreen Video Player: only Fullscreen button allowed, all other controls removed */}
         <div
           style={{
             position: 'relative',
-            borderRadius: '10px',
+            width: '100%',
+            height: isFullscreen ? '100vh' : 'auto',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: '#000',
             overflow: 'hidden',
-            background: '#000000',
-            border: '2px solid rgba(255, 42, 75, 0.6)',
-            boxShadow: '0 10px 40px rgba(0, 0, 0, 0.95)',
-            marginBottom: '16px',
+            borderRadius: isFullscreen ? '0' : '10px',
           }}
         >
           <video
             ref={videoRef}
             src={BIRTHDAY_CONFIG.specialVideoUrl}
-            controls
+            controls={false}
             playsInline
-            preload="metadata"
-            onPlay={handlePlay}
-            onPause={handlePause}
+            autoPlay
+            disablePictureInPicture
+            controlsList="nodownload nofullscreen noremoteplayback noplaybackrate"
+            onPlay={() => {
+              setHasStarted(true);
+              soundSystem.pauseMusic();
+            }}
             onTimeUpdate={handleTimeUpdate}
             onSeeking={handleSeeking}
-            onLoadedMetadata={handleLoadedMetadata}
             onEnded={handleEnded}
             onError={(e) => {
-              console.error('Special video load error event:', e);
+              console.error('Special video error:', e);
               setLoadError(true);
             }}
             style={{
               width: '100%',
-              maxHeight: '460px',
+              height: isFullscreen ? '100vh' : 'auto',
+              maxHeight: isFullscreen ? '100vh' : '65vh',
+              objectFit: 'contain',
               display: 'block',
               backgroundColor: '#000',
             }}
-          >
-            <source src={BIRTHDAY_CONFIG.specialVideoUrl} type="video/mp4" />
-          </video>
+          />
 
-          {/* Big Center Play Overlay Button when Paused */}
-          {!isPlaying && !loadError && (
+          {/* Dedicated Fullscreen Toggle Button - The ONLY allowed control */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleFullscreen();
+            }}
+            className="btn-cyber-primary pulse-cyber"
+            style={{
+              position: 'absolute',
+              top: '16px',
+              right: '16px',
+              zIndex: 30,
+              padding: '8px 16px',
+              fontSize: '0.8rem',
+              fontWeight: 900,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              backgroundColor: 'rgba(5, 5, 8, 0.85)',
+              border: '1.5px solid #ff2a4b',
+              boxShadow: '0 0 20px rgba(255, 42, 75, 0.6)',
+              backdropFilter: 'blur(6px)',
+              cursor: 'pointer',
+            }}
+            title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
+          >
+            {isFullscreen ? <Minimize size={16} /> : <Maximize size={16} />}
+            <span>{isFullscreen ? 'EXIT FULLSCREEN' : 'FULLSCREEN'}</span>
+          </button>
+
+          {/* Tap to start hint if browser blocked autoplay */}
+          {!hasStarted && !loadError && (
             <div
-              onClick={togglePlayPause}
               style={{
                 position: 'absolute',
                 inset: 0,
-                background: 'rgba(5, 5, 8, 0.45)',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
+                backgroundColor: 'rgba(5, 5, 8, 0.65)',
+                zIndex: 20,
                 cursor: 'pointer',
-                zIndex: 5,
               }}
             >
               <div
                 className="pulse-cyber"
                 style={{
-                  width: '74px',
-                  height: '74px',
-                  borderRadius: '50%',
-                  background: 'rgba(255, 42, 75, 0.9)',
-                  border: '2px solid #fff',
-                  boxShadow: '0 0 35px rgba(255, 42, 75, 0.8)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#fff',
-                  marginBottom: '10px',
+                  padding: '14px 24px',
+                  borderRadius: '30px',
+                  border: '2px solid #ffb703',
+                  backgroundColor: 'rgba(18, 10, 14, 0.95)',
+                  color: '#ffb703',
+                  fontWeight: 900,
+                  fontSize: '0.92rem',
+                  letterSpacing: '0.04em',
+                  boxShadow: '0 0 30px rgba(255, 183, 3, 0.6)',
                 }}
               >
-                <Play size={34} style={{ marginLeft: '4px' }} fill="#fff" />
+                ▶ TAP ANYWHERE TO START SPECIAL VIDEO
               </div>
-              <span
-                style={{
-                  color: '#fff',
-                  fontSize: '0.88rem',
-                  fontWeight: 800,
-                  textShadow: '0 2px 10px rgba(0,0,0,0.9)',
-                  letterSpacing: '0.05em',
-                }}
-              >
-                ▶ PLAY SPECIAL REEL
-              </span>
             </div>
           )}
 
+          {/* Load error fallback */}
           {loadError && (
             <div
               style={{
@@ -294,16 +326,20 @@ export const SpecialVideoLevel: React.FC<SpecialVideoLevelProps> = ({ onComplete
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                background: 'rgba(5, 5, 8, 0.95)',
+                backgroundColor: 'rgba(5, 5, 8, 0.95)',
                 color: '#ff2a4b',
                 padding: '16px',
-                zIndex: 6,
+                zIndex: 25,
+                textAlign: 'center',
               }}
             >
-              <AlertTriangle size={32} style={{ marginBottom: '8px' }} />
-              <div style={{ fontSize: '0.92rem', fontWeight: 800, marginBottom: '6px' }}>SPECIAL VIDEO FAILED TO LOAD</div>
+              <AlertTriangle size={34} style={{ marginBottom: '8px' }} />
+              <div style={{ fontSize: '0.95rem', fontWeight: 900, marginBottom: '6px' }}>
+                SPECIAL VIDEO FAILED TO LOAD
+              </div>
               <button
-                onClick={() => {
+                onClick={(e) => {
+                  e.stopPropagation();
                   setLoadError(false);
                   if (videoRef.current) {
                     videoRef.current.load();
@@ -311,7 +347,7 @@ export const SpecialVideoLevel: React.FC<SpecialVideoLevelProps> = ({ onComplete
                   }
                 }}
                 className="btn-cyber-primary"
-                style={{ padding: '8px 16px', fontSize: '0.8rem', marginTop: '8px' }}
+                style={{ padding: '8px 18px', fontSize: '0.8rem', marginTop: '10px' }}
               >
                 RELOAD VIDEO
               </button>
@@ -319,74 +355,47 @@ export const SpecialVideoLevel: React.FC<SpecialVideoLevelProps> = ({ onComplete
           )}
         </div>
 
-        {/* Video Info & Progress Bar */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            background: 'rgba(255, 42, 75, 0.08)',
-            border: '1px solid rgba(255, 42, 75, 0.25)',
-            borderRadius: '6px',
-            padding: '8px 14px',
-            marginBottom: '18px',
-            fontSize: '0.8rem',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ffb703', fontWeight: 700 }}>
-            <span>⏳ {formatTime(currentTime)} / {formatTime(duration)}</span>
+        {/* Level Progression Lock / Proceed (Visible outside fullscreen) */}
+        {!isFullscreen && (
+          <div style={{ width: '100%', marginTop: '18px' }}>
+            {hasFinished ? (
+              <button
+                onClick={handleProceed}
+                className="btn-cyber-primary pulse-cyber"
+                style={{
+                  width: '100%',
+                  padding: '15px',
+                  fontSize: '0.98rem',
+                  fontWeight: 900,
+                  letterSpacing: '0.04em',
+                }}
+              >
+                <CheckCircle2 size={18} />
+                <span>[ REEL COMPLETE! PROCEED TO LEVEL 9: GIFTS VAULT ➔ ]</span>
+              </button>
+            ) : (
+              <div
+                style={{
+                  background: 'rgba(255, 42, 75, 0.08)',
+                  border: '1px solid rgba(255, 42, 75, 0.3)',
+                  borderRadius: '8px',
+                  padding: '12px 16px',
+                  color: '#9e646d',
+                  fontSize: '0.82rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  fontWeight: 700,
+                  textAlign: 'center',
+                }}
+              >
+                <Lock size={15} color="#ff2a4b" />
+                <span>Next level locked — Watch the entire video to unlock Level 9!</span>
+              </div>
+            )}
           </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <button
-              onClick={togglePlayPause}
-              className="btn-cyber-secondary"
-              style={{ padding: '4px 10px', fontSize: '0.74rem' }}
-            >
-              {isPlaying ? <Pause size={12} /> : <Play size={12} />}
-              <span>{isPlaying ? 'PAUSE' : 'PLAY'}</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Level Proceed & Unlock Buttons */}
-        <div>
-          {hasFinished ? (
-            <button
-              onClick={handleProceed}
-              className="btn-cyber-primary pulse-cyber"
-              style={{
-                width: '100%',
-                padding: '15px',
-                fontSize: '1rem',
-                fontWeight: 900,
-                letterSpacing: '0.04em',
-              }}
-            >
-              <CheckCircle2 size={18} />
-              <span>[ REEL COMPLETE! PROCEED TO LEVEL 9: GIFTS VAULT ➔ ]</span>
-            </button>
-          ) : (
-            <div
-              style={{
-                background: 'rgba(255, 42, 75, 0.08)',
-                border: '1px solid rgba(255, 42, 75, 0.3)',
-                borderRadius: '8px',
-                padding: '14px',
-                color: '#9e646d',
-                fontSize: '0.85rem',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                fontWeight: 700,
-              }}
-            >
-              <Lock size={16} color="#ff2a4b" />
-              <span>Next Level is Locked — Watch the entire tribute reel to unlock Level 9!</span>
-            </div>
-          )}
-        </div>
+        )}
       </div>
     </div>
   );

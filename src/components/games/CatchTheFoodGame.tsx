@@ -35,13 +35,16 @@ export const CatchTheFoodGame: React.FC<CatchTheFoodGameProps> = ({ onComplete, 
   const TARGET_DISHES = 10;
 
   const DISH_NAMES = [
-    'Hyderabadi Dum Biryani',
-    'Crispy Chicken Burger',
-    'Sizzling Feast Platter',
-    'Butter Garlic Naan & Curry',
-    'Loaded Cheesy Fries',
-    'Rich Chocolate Dessert',
-    'Special Tandoori Delight',
+    'Crispy Pani Puri Plate #1',
+    'Spicy Teekha Pani Puri',
+    'Sweet Meetha Pani Puri',
+    'Special Masala Pani Puri',
+    'Crunchy Sev Pani Puri',
+    'Dahi Pani Puri Delight',
+    'Double Masala Pani Puri',
+    'Chatpata Pani Puri Plate',
+    'Hyderabadi Style Pani Puri',
+    'Grand 10th Pani Puri Plate!',
   ];
 
   const stateRef = useRef({
@@ -104,8 +107,8 @@ export const CatchTheFoodGame: React.FC<CatchTheFoodGameProps> = ({ onComplete, 
     setIsPaused(false);
     setReactionText(
       attempt < 3
-        ? `ATTEMPT ${attempt}: BIRYANI BARRAGE TSUNAMI! Catch them if you can! 😂`
-        : 'ATTEMPT 3: Normal Feast Mode! Catch 10 dishes to clear level!'
+        ? `ATTEMPT ${attempt}: PANI PURI TSUNAMI! Catch them if you can! 😂`
+        : 'ATTEMPT 3: Pani Puri Mode! Catch 10 plates to clear level!'
     );
     setRecentDishPhoto(null);
     setGameState('PLAYING');
@@ -120,7 +123,7 @@ export const CatchTheFoodGame: React.FC<CatchTheFoodGameProps> = ({ onComplete, 
           y: -30 - Math.random() * 40,
           speed: 8.0 + Math.random() * 2.5, // Super fast deliberate overload
           photoUrl,
-          dishName: DISH_NAMES[idx] || 'Feast Special',
+          dishName: DISH_NAMES[idx] || 'Pani Puri Special Plate',
           size: 60,
         });
       });
@@ -222,7 +225,7 @@ export const CatchTheFoodGame: React.FC<CatchTheFoodGameProps> = ({ onComplete, 
         s.spawnCooldown = 55 + Math.floor(Math.random() * 30);
         const photoIndex = Math.floor(Math.random() * BIRTHDAY_CONFIG.foodiePhotos.length);
         const photoUrl = BIRTHDAY_CONFIG.foodiePhotos[photoIndex];
-        const dishName = DISH_NAMES[photoIndex] || 'Delicious Feast';
+        const dishName = DISH_NAMES[photoIndex] || 'Crispy Pani Puri Plate';
 
         s.items.push({
           id: s.nextId++,
@@ -242,28 +245,100 @@ export const CatchTheFoodGame: React.FC<CatchTheFoodGameProps> = ({ onComplete, 
         const item = s.items[i];
         item.y += item.speed;
 
-        // Draw photo dish card
-        const img = imagesRef.current[item.photoUrl];
+        // Draw Pani Puri Plate
+        const radius = item.size / 2;
         ctx.save();
+        ctx.translate(item.x, item.y);
+
+        // Plate shadow & glow
+        ctx.shadowColor = 'rgba(255, 183, 3, 0.45)';
+        ctx.shadowBlur = 12;
+
+        // Plate Outer Rim
+        ctx.fillStyle = '#181216';
         ctx.beginPath();
-        ctx.arc(item.x, item.y, item.size / 2, 0, Math.PI * 2);
-        ctx.closePath();
-        ctx.clip();
+        ctx.arc(0, 0, radius, 0, Math.PI * 2);
+        ctx.fill();
 
-        if (img && img.complete) {
-          ctx.drawImage(img, item.x - item.size / 2, item.y - item.size / 2, item.size, item.size);
-        } else {
-          ctx.fillStyle = '#ff2a4b';
-          ctx.fill();
-        }
-        ctx.restore();
-
-        // Neon border around dish
+        // Plate Border (Golden Cyber Steel)
         ctx.strokeStyle = '#ffb703';
         ctx.lineWidth = 2.5;
-        ctx.beginPath();
-        ctx.arc(item.x, item.y, item.size / 2, 0, Math.PI * 2);
         ctx.stroke();
+        ctx.shadowBlur = 0; // reset shadow
+
+        // Inner plate bed
+        ctx.fillStyle = '#22181c';
+        ctx.beginPath();
+        ctx.arc(0, 0, radius - 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Center bowl of Spicy Teekha Mint Water (Pani)
+        const bowlRadius = radius * 0.38;
+        const mintGrad = ctx.createRadialGradient(0, 0, 2, 0, 0, bowlRadius);
+        mintGrad.addColorStop(0, '#74c69d');
+        mintGrad.addColorStop(0.7, '#2d6a4f');
+        mintGrad.addColorStop(1, '#1b4332');
+        ctx.fillStyle = mintGrad;
+        ctx.beginPath();
+        ctx.arc(0, 0, bowlRadius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#95d5b2';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // 5 Crispy Golden Puris around the bowl
+        const puriCount = 5;
+        const orbitRadius = radius * 0.58;
+        const puriRadius = radius * 0.26;
+
+        for (let p = 0; p < puriCount; p++) {
+          const angle = (p * 2 * Math.PI) / puriCount;
+          const px = Math.cos(angle) * orbitRadius;
+          const py = Math.sin(angle) * orbitRadius;
+
+          // Crispy Puri shell
+          const puriGrad = ctx.createRadialGradient(px, py, 1, px, py, puriRadius);
+          puriGrad.addColorStop(0, '#ffe3a8');
+          puriGrad.addColorStop(0.6, '#f4a261');
+          puriGrad.addColorStop(1, '#c85a17');
+          ctx.fillStyle = puriGrad;
+          ctx.beginPath();
+          ctx.arc(px, py, puriRadius, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#e76f51';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+
+          // Crack opening in puri with tamarind & spicy filling
+          ctx.fillStyle = '#6f1d1b'; // Tamarind chutney
+          ctx.beginPath();
+          ctx.arc(px, py - 1, puriRadius * 0.45, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = '#52b788'; // Drop of mint pani
+          ctx.beginPath();
+          ctx.arc(px + 1, py, puriRadius * 0.22, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Tiny floating banner: PANI PURI
+        ctx.fillStyle = 'rgba(5, 5, 8, 0.85)';
+        ctx.strokeStyle = '#ffb703';
+        ctx.lineWidth = 1;
+        const tagW = 64;
+        const tagH = 14;
+        ctx.beginPath();
+        ctx.roundRect(-tagW / 2, radius - 2, tagW, tagH, 3);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#ffb703';
+        ctx.font = 'bold 8px monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('🥟 PANI PURI', 0, radius + 5);
+
+        ctx.restore();
 
         // Check collision with Ashuu's basket
         const distX = Math.abs(item.x - s.basketX);
@@ -275,7 +350,7 @@ export const CatchTheFoodGame: React.FC<CatchTheFoodGameProps> = ({ onComplete, 
           s.dishesCaught += 1;
           setDishesCaught(s.dishesCaught);
           setRecentDishPhoto(item.photoUrl);
-          setReactionText(`Secured: ${item.dishName}! 🍽️`);
+          setReactionText(`Secured: ${item.dishName}! 🥟`);
           s.items.splice(i, 1);
 
           // Check win condition
@@ -286,11 +361,8 @@ export const CatchTheFoodGame: React.FC<CatchTheFoodGameProps> = ({ onComplete, 
             confetti({
               particleCount: 160,
               spread: 90,
-              colors: ['#ff2a4b', '#ffb703', '#ffffff'],
+              colors: ['#ff2a4b', '#ffb703', '#ffffff', '#2ec4b6'],
             });
-            setTimeout(() => {
-              onComplete(10);
-            }, 1400);
             return;
           }
           continue;
@@ -302,7 +374,7 @@ export const CatchTheFoodGame: React.FC<CatchTheFoodGameProps> = ({ onComplete, 
           s.lives -= 1;
           setLives(s.lives);
           soundSystem.playHit();
-          setReactionText('A feast dish slipped away! Watch out!');
+          setReactionText('Pani Puri plate slipped away! Watch out!');
 
           if (s.lives <= 0) {
             s.gameState = 'GAMEOVER';
@@ -345,7 +417,7 @@ export const CatchTheFoodGame: React.FC<CatchTheFoodGameProps> = ({ onComplete, 
         c.fillStyle = '#fff';
         c.font = '16px monospace';
         c.textAlign = 'center';
-        c.fillText('🍽️ ASHU', x, y + 24);
+        c.fillText('🥟 ASHU', x, y + 24);
       }
     };
 
@@ -376,13 +448,13 @@ export const CatchTheFoodGame: React.FC<CatchTheFoodGameProps> = ({ onComplete, 
       {/* Control Instruction Modal before gameplay starts */}
       {showInstructions && (
         <ControlInstructionModal
-          levelNumber={2}
-          levelTitle="RESTAURANT FEAST PROTOCOL"
-          objective="Ashuu favorite food items painunchi paduthunnai. 10 dishes plate lo catch chey!"
+          levelNumber={3}
+          levelTitle="PANI PURI FEAST PROTOCOL"
+          objective="Ashuu favorite Pani Puri plates painunchi paduthunnai. 10 plates plate lo catch chey!"
           desktopControls="MOUSE or LEFT/RIGHT ARROWS tho plate move chey."
           mobileControls="Screen meedha FINGER drag chesi plate move chey."
-          tip="3 dishes slip aithe out! Fast ga catch chey!"
-          badgeIcon="🍲"
+          tip="3 plates slip aithe out! Fast ga catch chey!"
+          badgeIcon="🥟"
           onStartGame={() => {
             setShowInstructions(false);
             startGame();
@@ -418,7 +490,7 @@ export const CatchTheFoodGame: React.FC<CatchTheFoodGameProps> = ({ onComplete, 
           )}
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#ff2a4b', fontSize: '0.82rem', fontWeight: 800 }}>
             <Terminal size={15} />
-            <span>FOOD FEAST // ATTEMPT {attempt}/3</span>
+            <span>PANI PURI FEAST // ATTEMPT {attempt}/3</span>
           </div>
         </div>
 
@@ -472,7 +544,7 @@ export const CatchTheFoodGame: React.FC<CatchTheFoodGameProps> = ({ onComplete, 
               gap: '6px',
             }}
           >
-            <span style={{ fontSize: '0.74rem', color: '#cbd5e1' }}>DISHES:</span>
+            <span style={{ fontSize: '0.74rem', color: '#cbd5e1' }}>PANI PURI:</span>
             <span style={{ fontSize: '1.1rem', fontWeight: 900, color: '#ffb703' }}>
               {dishesCaught} / {TARGET_DISHES}
             </span>
@@ -522,19 +594,7 @@ export const CatchTheFoodGame: React.FC<CatchTheFoodGameProps> = ({ onComplete, 
           }}
         >
           <span style={{ color: '#ffb703', fontWeight: 700 }}>{reactionText}</span>
-          {recentDishPhoto && (
-            <img
-              src={recentDishPhoto}
-              alt="Recent dish"
-              style={{
-                width: '24px',
-                height: '24px',
-                borderRadius: '50%',
-                objectFit: 'cover',
-                border: '1px solid #ff2a4b',
-              }}
-            />
-          )}
+          <span style={{ fontSize: '1.1rem' }}>🥟</span>
         </div>
 
         {/* Canvas */}
@@ -601,10 +661,10 @@ export const CatchTheFoodGame: React.FC<CatchTheFoodGameProps> = ({ onComplete, 
             >
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#ff2a4b', fontWeight: 900, fontSize: '0.9rem', marginBottom: '10px' }}>
                 <ShieldAlert size={16} />
-                <span>FEAST OVERLOAD // ATTEMPT {attempt} FAILED!</span>
+                <span>PANI PURI OVERLOAD // ATTEMPT {attempt} FAILED!</span>
               </div>
 
-              {/* Loss Video Clip WITH Audio & Unmute overlay */}
+              {/* Loss Video Clip WITH Audio */}
               <LoseClipPlayer
                 maxHeight="180px"
                 onResumeMusic={() => soundSystem.playSiteMusic()}
@@ -612,8 +672,8 @@ export const CatchTheFoodGame: React.FC<CatchTheFoodGameProps> = ({ onComplete, 
 
               <p style={{ color: '#cbd5e1', fontSize: '0.82rem', marginBottom: '14px', lineHeight: 1.4 }}>
                 {attempt < 3
-                  ? `Biryani tsunami lo Ashuu plates anni slip aipoyayi! 😂 Attempt ${attempt + 1} ready?`
-                  : 'Dishes dropped! Ready to retry?'}
+                  ? `Pani Puri flood lo Ashuu plates anni slip aipoyayi! 😂 Attempt ${attempt + 1} ready?`
+                  : 'Pani Puri plates dropped! Ready to retry?'}
               </p>
 
               <button
@@ -626,78 +686,89 @@ export const CatchTheFoodGame: React.FC<CatchTheFoodGameProps> = ({ onComplete, 
                 style={{ width: '100%', padding: '12px', fontSize: '0.88rem' }}
               >
                 <RotateCcw size={16} />
-                <span>[ RETRY FEAST {attempt < 3 ? `(ATTEMPT ${attempt + 1}/3)` : ''} ]</span>
+                <span>[ RETRY PANI PURI {attempt < 3 ? `(ATTEMPT ${attempt + 1}/3)` : ''} ]</span>
               </button>
             </div>
           </div>
         )}
 
-        {/* Complete Overlay - Prominent Foodie Photo */}
+        {/* Complete Overlay - Immediately display large eating-photo.png */}
         {gameState === 'COMPLETE' && (
           <div
             style={{
               position: 'absolute',
               inset: 0,
-              backgroundColor: 'rgba(5, 5, 8, 0.94)',
-              backdropFilter: 'blur(8px)',
+              backgroundColor: 'rgba(5, 5, 8, 0.95)',
+              backdropFilter: 'blur(10px)',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              padding: '24px',
+              padding: '20px 16px',
               zIndex: 35,
               textAlign: 'center',
+              animation: 'fadeIn 0.3s ease-out',
             }}
           >
             <div
               className="terminal-panel"
               style={{
-                padding: '26px 20px',
-                border: '1.5px solid #ffb703',
-                boxShadow: '0 0 45px rgba(255, 183, 3, 0.45)',
-                maxWidth: '340px',
+                padding: '24px 20px',
+                border: '2px solid #ffb703',
+                boxShadow: '0 0 50px rgba(255, 183, 3, 0.55)',
+                maxWidth: '380px',
                 width: '100%',
               }}
             >
-              <div style={{ fontSize: '2.2rem', marginBottom: '8px' }}>🍛🎉</div>
-              <div style={{ fontSize: '1.25rem', fontWeight: 900, color: '#ffb703', marginBottom: '6px' }}>
-                FEAST COMPLETE!
+              <div style={{ fontSize: '2rem', marginBottom: '6px' }}>🥟🎉</div>
+              <div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#ffb703', marginBottom: '4px' }}>
+                PANI PURI FEAST COMPLETE!
+              </div>
+              <div style={{ fontSize: '0.82rem', color: '#cbd5e1', marginBottom: '12px' }}>
+                10 Plates of Pani Puri Secured by Ashuu!
               </div>
 
-              {/* Prominent Foodie Photo */}
+              {/* Large, clearly visible eating-photo.png */}
               <div
                 style={{
-                  width: '140px',
-                  height: '140px',
-                  borderRadius: '50%',
-                  margin: '12px auto',
+                  width: '100%',
+                  maxWidth: '260px',
+                  height: '240px',
+                  borderRadius: '12px',
+                  margin: '0 auto 14px',
                   overflow: 'hidden',
                   border: '3px solid #ffb703',
-                  boxShadow: '0 0 25px rgba(255, 183, 3, 0.5)',
+                  boxShadow: '0 0 30px rgba(255, 183, 3, 0.5)',
+                  backgroundColor: '#000',
                 }}
               >
                 <img
-                  src={BIRTHDAY_CONFIG.foodiePhotos[0]}
-                  alt="Ashu Foodie"
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  src={BIRTHDAY_CONFIG.eatingPhotoUrl}
+                  alt="Ashuu Eating Pani Puri"
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    display: 'block',
+                  }}
                 />
               </div>
 
               <p style={{ color: '#fff', fontSize: '0.86rem', fontWeight: 700, marginBottom: '6px' }}>
-                All 10 feast dishes secured!
+                10 plates Pani Puri clean sweep chesav! 🥟
               </p>
               <p style={{ color: '#9e646d', fontSize: '0.78rem', marginBottom: '16px' }}>
-                Foodie Gang lo Ashuu thopu anthe! 🍗🤤
+                Foodie Gang lo Ashuu thopu anthe! 🤤✨
               </p>
               <button
                 onClick={() => {
                   soundSystem.playClick();
                   onComplete(10);
                 }}
-                className="btn-cyber-primary"
-                style={{ width: '100%', padding: '12px' }}
+                className="btn-cyber-primary pulse-cyber"
+                style={{ width: '100%', padding: '14px', fontSize: '0.88rem', fontWeight: 900 }}
               >
-                <span>[ PROCEED TO NEXT LEVEL ➔ ]</span>
+                <span>[ PROCEED TO LEVEL 4: SPIDER-MAN PROTOCOL ➔ ]</span>
               </button>
             </div>
           </div>

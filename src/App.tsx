@@ -366,10 +366,10 @@ export const App: React.FC = () => {
       {/* PHOTO MOMENT 2: Ashu Foodie Photo */}
       {currentScreen === 'MOMENT_FOOD' && (
         <LevelPhotoMoment
-          levelTitle="LEVEL 3 COMPLETE: FEAST SECURED!"
+          levelTitle="LEVEL 3 COMPLETE: PANI PURI FEAST SECURED!"
           badgeText="STAGE 3 CLEARED"
-          photoUrl={BIRTHDAY_CONFIG.foodiePhotos[0]}
-          tenglishQuote="10 plates Biryani & Feast finish chesav! Foodie Gang lo Ashuu thopu anthe! 🍗🤤"
+          photoUrl={BIRTHDAY_CONFIG.eatingPhotoUrl}
+          tenglishQuote="10 plates Pani Puri finish chesav! Foodie Gang lo Ashuu thopu anthe! 🥟🤤"
           nextButtonText="[ PROCEED TO LEVEL 4: SPIDER-MAN PROTOCOL ➔ ]"
           onProceed={handleMomentFoodProceed}
           onBack={() => setCurrentScreen('LEVEL_FOOD')}
