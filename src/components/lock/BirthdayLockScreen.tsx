@@ -3,6 +3,7 @@ import gsap from 'gsap';
 import { ShieldCheck, AlertCircle, ShieldAlert, ArrowLeft, RotateCcw } from 'lucide-react';
 import { BIRTHDAY_CONFIG } from '../../config/birthdayConfig';
 import { soundSystem } from '../../utils/audioSystem';
+import { LoseClipPlayer } from '../common/LoseClipPlayer';
 
 interface BirthdayLockScreenProps {
   onUnlock: () => void;
@@ -425,50 +426,11 @@ export const BirthdayLockScreen: React.FC<BirthdayLockScreenProps> = ({ onUnlock
                   <span>WRONG ANSWER // ASHU IS 100% GALAXY WITHOUT LAX!</span>
                 </div>
 
-                <div
-                  style={{
-                    position: 'relative',
-                    width: '100%',
-                    borderRadius: '8px',
-                    overflow: 'hidden',
-                    background: '#000',
-                    border: '1px solid rgba(255, 42, 75, 0.6)',
-                    marginBottom: '16px',
-                  }}
-                >
-                  <video
-                    src={BIRTHDAY_CONFIG.loseClipUrl}
-                    autoPlay
-                    playsInline
-                    loop
-                    preload="auto"
-                    onCanPlay={(e) => {
-                      const v = e.currentTarget;
-                      const p = v.play();
-                      if (p !== undefined) {
-                        p.catch(() => {
-                          v.muted = true;
-                          v.play().catch(() => {});
-                        });
-                      }
-                    }}
-                    onClick={(e) => {
-                      const v = e.currentTarget;
-                      v.muted = false;
-                      v.play().catch(() => {});
-                    }}
-                    style={{
-                      width: '100%',
-                      maxHeight: '210px',
-                      display: 'block',
-                      backgroundColor: '#000',
-                      objectFit: 'contain',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    <source src={BIRTHDAY_CONFIG.loseClipUrl} type="video/mp4" />
-                  </video>
-                </div>
+                {/* Loss Video Clip WITH Audio & Unmute overlay */}
+                <LoseClipPlayer
+                  maxHeight="210px"
+                  onResumeMusic={() => soundSystem.playSiteMusic()}
+                />
 
                 <p style={{ color: '#cbd5e1', fontSize: '0.85rem', marginBottom: '16px' }}>
                   Arey Ashuu! "No" enduku click chesav? Ashu is 200% Galaxy without lax anthe! 😂

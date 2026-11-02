@@ -3,6 +3,7 @@ import confetti from 'canvas-confetti';
 import { ArrowLeft, RotateCcw, Trophy, CheckCircle2, Terminal, ShieldAlert } from 'lucide-react';
 import { BIRTHDAY_CONFIG } from '../../config/birthdayConfig';
 import { soundSystem } from '../../utils/audioSystem';
+import { LoseClipPlayer } from '../common/LoseClipPlayer';
 
 interface SpiderWebSwingGameProps {
   onComplete: (score: number) => void;
@@ -537,50 +538,11 @@ export const SpiderWebSwingGame: React.FC<SpiderWebSwingGameProps> = ({ onComple
               </div>
 
               {/* Contained Video Clip WITH AUDIO */}
-              <div
-                style={{
-                  position: 'relative',
-                  width: '100%',
-                  borderRadius: '6px',
-                  overflow: 'hidden',
-                  background: '#000',
-                  border: '1px solid rgba(255, 42, 75, 0.6)',
-                  marginBottom: '12px',
-                }}
-              >
-                <video
-                  src={BIRTHDAY_CONFIG.loseClipUrl}
-                  autoPlay
-                  playsInline
-                  loop
-                  preload="auto"
-                  onCanPlay={(e) => {
-                    const v = e.currentTarget;
-                    const p = v.play();
-                    if (p !== undefined) {
-                      p.catch(() => {
-                        v.muted = true;
-                        v.play().catch(() => {});
-                      });
-                    }
-                  }}
-                  onClick={(e) => {
-                    const v = e.currentTarget;
-                    v.muted = false;
-                    v.play().catch(() => {});
-                  }}
-                  style={{
-                    width: '100%',
-                    maxHeight: '180px',
-                    display: 'block',
-                    backgroundColor: '#000',
-                    objectFit: 'contain',
-                    cursor: 'pointer',
-                  }}
-                >
-                  <source src={BIRTHDAY_CONFIG.loseClipUrl} type="video/mp4" />
-                </video>
-              </div>
+              {/* Loss Video Clip WITH Audio & Unmute overlay */}
+              <LoseClipPlayer
+                maxHeight="180px"
+                onResumeMusic={() => soundSystem.playSiteMusic()}
+              />
 
               <p style={{ color: '#cbd5e1', fontSize: '0.84rem', marginBottom: '14px' }}>
                 Reached {distance}m • Ground or drone collision! 😂 Ready to retry?
