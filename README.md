@@ -1,97 +1,100 @@
-# 🎂 Birthday Arcade — Interactive Birthday Surprise
+# 🎂 Birthday Arcade — Aakash & Sanjay's Birthday Surprise
 
-A premium, cinematic, interactive birthday adventure built with **React**, **TypeScript**, **Phaser 3**, **GSAP**, and **Web Audio**.
-
----
-
-## 🌟 The Experience Journey
-
-1. **Cinematic Opening Screen**: Atmospheric particle canvas, gold typography, non-intrusive audio toggle, and glowing Play button.
-2. **Game 1 — Birthday Flap Adventure (Phaser 3)**: A custom Flappy Bird-style game featuring the birthday person's face mounted on an animated hero body flying through birthday candle towers. Unlocks the arcade at Score 10!
-3. **The Birthday Arcade**: Dedicated arcade hub with a visible progress indicator ($X/5$ games completed) and 5 playable mini-games:
-   - 🪂 **Birthday Flap**: Replay the opening challenge.
-   - 🎁 **Catch the Gifts**: Slide the birthday basket using touch, mouse, or arrow keys to catch treats and avoid prank bombs.
-   - 🧠 **Memory Match**: 3D card-flipping game with 8 sweet birthday icon pairs and star ratings.
-   - ⚡ **Birthday Reflexes**: Reaction test measuring millisecond reflexes with personalized birthday ranks.
-   - 🎈 **Balloon Pop Frenzy**: Fast-paced 30-second balloon popping challenge with realistic pop sounds and golden balloon bonuses.
-4. **Final Birthday Surprise**: Full-screen luxury birthday card with:
-   - Ornate golden medallion photo frame
-   - Interactive birthday cake with candles you can blow out
-   - Touching personalized letter scroll
-   - Confetti fireworks
-   - Custom audio player component
+A complete, personalized, interactive birthday experience custom-built for your close college mate by **Aakash & Sanjay**. Built using **React**, **TypeScript**, **Phaser 3**, **GSAP**, and the **Web Audio API**.
 
 ---
 
-## 🚀 Quick Start
+## 🌟 The Complete Experience Flow
 
-### 1. Install dependencies
-```bash
-npm install
-```
+### 1. Birthday Lock Screen
+- **Fixed Date of Birth**: November 3, 2005 (`2005-11-03`).
+- **Passcode**: `03112005` (Numeric on-screen keypad + keyboard input with error feedback).
+- **Dynamic Age**: Calculated dynamically from his birth date.
+- **Live Countdown**: Animated countdown showing days, hours, minutes, and seconds until his next birthday.
 
-### 2. Start development server
-```bash
-npm run dev
-```
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+### 2. Opening Screen
+- **Main Title**: *"Your Birthday Adventure Starts Here!"*
+- **Subtitle**: *"One birthday. A whole lot of chaos. One unforgettable surprise."*
+- **Aesthetic**: Dark gaming interface with crimson accents, glowing particles, and pulsing Play button.
+- **Audio Control**: Persistent top-right music toggle with zero autoplay until user interaction.
 
-### 3. Build for production (Vercel ready)
-```bash
-npm run build
-```
+### 3. Game One — Birthday Flap Adventure
+- Custom Flappy Bird-style game with his face mounted on a flying superhero body.
+- Parallax starfield, clouds, and birthday candle towers with flickering flames.
+- Reach **Score 10** (*"Level 1 Complete!"*) to unlock the Birthday Arcade!
+
+### 4. Birthday Arcade (6 Playable Games)
+1. 🚗 **GTA Chaos Run**: 3-lane endless runner dodging sports cars, jumping orange barriers, sliding under overhead signs, and collecting cash.
+2. 🕷️ **Spider Web Swing**: 2D web-slinging physics platformer swinging between neon skyscrapers to reach the finish line.
+3. 🪖 **Battle Royale Survival (Free Fire style)**: Top-down combat arena with a shrinking blue zone, airdrops, medkits, airstrike red zones, and a **"BOOYAH!"** victory celebration.
+4. 🍕 **Catch the Food**: Fast-paced food catching game using his **eating photo** with funny reactive speech bubbles (*"Diet starts tomorrow!"*, *"Biryani is life!"*).
+5. 😴 **Sleep Mode Challenge**: Hilarious reaction game fighting off the drowsiness meter using his **sleeping photo** in the game-over animation (*"Out cold! 14-hour nap mode engaged"*).
+6. 🪂 **Birthday Flap Adventure**: Replay the opening challenge.
+
+### 5. Gaming Quiz
+- Multiple-choice trivia covering **GTA** (cheat codes, characters), **Spider-Man**, and **Free Fire**.
+- Instant feedback with fact explanations, scoring, and rank badges (*"👑 ESPORTS PRO / LEVEL 100 GAMER"*).
+
+### 6. Funny Questions & Personal Quiz (Aakash & Sanjay Edition)
+- Friendly inside jokes, late arrival roasts (*"Bro I'm 2 mins away!"*), gaming excuses, and brotherly friendship ratings.
+
+### 7. Movie Lover Experience
+- Guess iconic films from emoji clues (e.g. `⏳ 🚀 🪐 🌽 📚` for *Interstellar*), quotes, and trivia.
+
+### 8. Final Birthday Surprise
+- **Card Signed by**: **Aakash & Sanjay** ❤️
+- **Default Message**:
+  > *"Happy Birthday!  
+  > Another year older, another level unlocked.  
+  > Wishing you more happiness, more adventures, more success, and countless unforgettable memories.  
+  > Keep chasing your dreams, keep being yourself, and never lose that crazy energy.  
+  > Here's to another year of friendship, laughter, and legendary moments.  
+  > Happy Birthday, bro!  
+  > — Aakash & Sanjay"*
+- **Interactive Cake**: 3 candles with realistic flickering flames you can blow out or relight with breath sound effects and confetti fireworks.
+- **Reusable Audio Player**: Scrubbable progress bar, volume control, mute button, and built-in music-box synth fallback.
+- **Full Replay**: Instant reset button to experience the adventure again.
 
 ---
 
-## 🎨 How to Personalize for the Birthday Person
+## 🎨 Personalization & Assets
 
-All personalization settings are centralized in **[`src/config/birthdayConfig.ts`](./src/config/birthdayConfig.ts)**:
+All settings are centralized in **[`src/config/birthdayConfig.ts`](./src/config/birthdayConfig.ts)**:
 
 ```typescript
 export const BIRTHDAY_CONFIG: BirthdayConfig = {
-  // 1. Birthday Person's Name
   personName: "Ashu",
-  nickname: "Rockstar",
+  dob: "2005-11-03",
+  lockPassword: "03112005",
+  signers: ["Aakash", "Sanjay"],
 
-  // 2. Personal Assets (drop files in public/images/ and public/audio/)
-  photoUrl: "/images/birthday-person.png",     // Main photo in Final Surprise
-  characterFaceUrl: "/images/character-face.png", // Face for the Flap hero
-  birthdaySongUrl: "/audio/birthday-song.mp3",   // Custom MP3 or WAV track
-  songTitle: "Birthday Celebration Anthem",
-  songArtist: "Dedicated to Ashu with Love",
-
-  // 3. Opening Screen
-  openingTitle: "A Special Day Awaits...",
-  openingSubtitle: "Your birthday adventure starts here.",
-
-  // 4. Personalized Birthday Message
-  surpriseHeading: "Happy Birthday, Ashu! 🎂",
-  surpriseSubheading: "Today is all about celebrating the incredible person you are.",
-  birthdayLetter: {
-    salutation: "Dearest Ashu,",
-    paragraphs: [
-      "Another trip around the sun, and another chapter of awesome memories...",
-      "May this year bring you boundless joy, wild success, and true happiness...",
-      "Keep shining brightly and inspiring everyone around you!"
-    ],
-    closing: "With all my love and biggest hugs,",
-    signature: "Your Favorite Person ❤️"
-  },
-
-  // 5. Visual Colors & Target
-  flapGoalScore: 10,
+  photoUrl: "/images/birthday-person.png",        // Final surprise photo
+  characterFaceUrl: "/images/character-face.png",// Main face for games
+  sleepingPhotoUrl: "/images/sleeping-photo.png",// Sleeping photo for Sleep Mode
+  eatingPhotoUrl: "/images/eating-photo.png",    // Food-eating photo for Catch Food
+  birthdaySongUrl: "/audio/birthday-song.mp3",    // Custom MP3 or WAV
+  
+  // Easily customize quiz questions, letter text, and targets here!
 };
 ```
 
-### Adding Your Assets:
-- **Photo**: Place their photo in `public/images/birthday-person.png` (or `.jpg`/`.webp`).
-- **Character Face**: Place a transparent PNG or WebP face crop in `public/images/character-face.png`.
-- **Birthday Song**: Place an MP3 or WAV in `public/audio/birthday-song.mp3`. *(If no audio file is provided, the website automatically plays a procedural music-box synthesizer rendition of the Happy Birthday melody!)*
+### Dropping in Your Actual Photos:
+- **Main Photo**: Save to `public/images/birthday-person.png`
+- **Character Face**: Save a transparent PNG face crop to `public/images/character-face.png`
+- **Eating Photo**: Save his food-eating photo to `public/images/eating-photo.png`
+- **Sleeping Photo**: Save his sleeping photo to `public/images/sleeping-photo.png`
+- **Song**: Place an MP3 or WAV file in `public/audio/birthday-song.mp3`
 
 ---
 
-## 📱 Devices & Controls
-- **Mobile Phones & Tablets**: Full responsive touch controls (tap to flap, drag basket, tap cards, tap balloons).
-- **Desktop**: Mouse clicks, Spacebar jump, Arrow keys for basket.
-- **Audio**: Respects modern browser autoplay restrictions; sound effects and music activate cleanly on user interaction.
+## 🚀 Running the Project
 
+```bash
+# Start development server
+npm run dev
+
+# Open http://localhost:3000
+
+# Build for Vercel deployment
+npm run build
+```
