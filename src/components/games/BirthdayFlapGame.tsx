@@ -732,3 +732,4 @@ export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({
     </div>
   );
 };
+

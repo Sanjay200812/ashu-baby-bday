@@ -261,3 +261,4 @@ export const ReactionGame: React.FC<ReactionGameProps> = ({ onComplete, onBack }
     </div>
   );
 };
+

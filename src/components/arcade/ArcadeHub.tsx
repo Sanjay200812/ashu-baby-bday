@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, Trophy, ChevronRight, Play, CheckCircle2, Gift } from 'lucide-react';
+import { Sparkles, Trophy, ChevronRight, Play, CheckCircle2, Gift, Gamepad2, Film, Laugh } from 'lucide-react';
 import { GameProgress, MiniGameId } from '../../types/game';
 import { BIRTHDAY_CONFIG } from '../../config/birthdayConfig';
 import { soundSystem } from '../../utils/audioSystem';
@@ -7,6 +7,9 @@ import { soundSystem } from '../../utils/audioSystem';
 interface ArcadeHubProps {
   progress: GameProgress;
   onSelectGame: (gameId: MiniGameId) => void;
+  onOpenGamingQuiz: () => void;
+  onOpenPersonalQuiz: () => void;
+  onOpenMovieExperience: () => void;
   onOpenSurprise: () => void;
 }
 
@@ -21,12 +24,19 @@ interface ArcadeGameMeta {
   accentColor: string;
 }
 
-export const ArcadeHub: React.FC<ArcadeHubProps> = ({ progress, onSelectGame, onOpenSurprise }) => {
+export const ArcadeHub: React.FC<ArcadeHubProps> = ({
+  progress,
+  onSelectGame,
+  onOpenGamingQuiz,
+  onOpenPersonalQuiz,
+  onOpenMovieExperience,
+  onOpenSurprise,
+}) => {
   const games: ArcadeGameMeta[] = [
     {
       id: 'flap',
       title: 'Birthday Flap',
-      subtitle: "Fly through birthday towers with Ashu's avatar!",
+      subtitle: "Fly through birthday candle towers with his custom hero avatar!",
       icon: '🪂',
       category: 'Arcade Classic',
       isCompleted: progress.flapCompleted,
@@ -34,44 +44,54 @@ export const ArcadeHub: React.FC<ArcadeHubProps> = ({ progress, onSelectGame, on
       accentColor: '#ffd700',
     },
     {
-      id: 'catch',
-      title: 'Catch the Gifts',
-      subtitle: 'Slide the basket to catch birthday surprises & avoid bombs',
-      icon: '🎁',
-      category: 'Agility',
-      isCompleted: progress.catchCompleted,
-      bestLabel: progress.catchBestScore > 0 ? `Best: ${progress.catchBestScore} pts` : undefined,
-      accentColor: '#e040fb',
+      id: 'gta',
+      title: 'GTA Chaos Run',
+      subtitle: 'Dodge sports cars, jump obstacles, slide under beams & collect cash',
+      icon: '🚗',
+      category: 'Endless Runner',
+      isCompleted: progress.gtaCompleted,
+      bestLabel: progress.gtaBestScore > 0 ? `Best: ${progress.gtaBestScore} pts` : undefined,
+      accentColor: '#dc2626',
     },
     {
-      id: 'memory',
-      title: 'Memory Match',
-      subtitle: 'Flip and match the sweet birthday pairs',
-      icon: '🧠',
-      category: 'Puzzle',
-      isCompleted: progress.memoryCompleted,
-      bestLabel: progress.memoryBestMoves > 0 ? `Best: ${progress.memoryBestMoves} moves` : undefined,
+      id: 'spiderman',
+      title: 'Spider Web Swing',
+      subtitle: 'Hold to latch webs & swing across neon skyscrapers to the finish line',
+      icon: '🕷️',
+      category: '2D Platformer',
+      isCompleted: progress.spidermanCompleted,
+      bestLabel: progress.spidermanBestScore > 0 ? `Best: ${progress.spidermanBestScore} pts` : undefined,
       accentColor: '#00e5ff',
     },
     {
-      id: 'reaction',
-      title: 'Birthday Reflexes',
-      subtitle: 'Test your lightning reflexes when the cake drops',
-      icon: '⚡',
-      category: 'Speed Test',
-      isCompleted: progress.reactionCompleted,
-      bestLabel: progress.reactionBestMs > 0 ? `Best: ${progress.reactionBestMs} ms` : undefined,
-      accentColor: '#ff4081',
+      id: 'freefire',
+      title: 'Battle Royale Survival',
+      subtitle: 'Stay in the shrinking blue safe zone, dodge airstrikes & grab airdrops',
+      icon: '🪖',
+      category: 'Combat Survival',
+      isCompleted: progress.freefireCompleted,
+      bestLabel: progress.freefireBestScore > 0 ? `Best: ${progress.freefireBestScore} pts` : undefined,
+      accentColor: '#ea580c',
     },
     {
-      id: 'balloon',
-      title: 'Balloon Pop Frenzy',
-      subtitle: 'Pop floaty colorful balloons before the clock runs out',
-      icon: '🎈',
-      category: 'Fast Action',
-      isCompleted: progress.balloonCompleted,
-      bestLabel: progress.balloonBestScore > 0 ? `Best: ${progress.balloonBestScore} pts` : undefined,
-      accentColor: '#4ade80',
+      id: 'food',
+      title: 'Catch the Food',
+      subtitle: 'Catch pizzas, burgers & biryani with funny food-eating photo reactions',
+      icon: '🍕',
+      category: 'Foodie Fun',
+      isCompleted: progress.foodCompleted,
+      bestLabel: progress.foodBestScore > 0 ? `Best: ${progress.foodBestScore} pts` : undefined,
+      accentColor: '#f59e0b',
+    },
+    {
+      id: 'sleep',
+      title: 'Sleep Mode',
+      subtitle: 'Fight the drowsiness meter and stay awake with sleeping photo reactions',
+      icon: '😴',
+      category: 'Reaction Test',
+      isCompleted: progress.sleepCompleted,
+      bestLabel: progress.sleepBestScore > 0 ? `Best: ${progress.sleepBestScore} pts` : undefined,
+      accentColor: '#818cf8',
     },
   ];
 
@@ -89,7 +109,7 @@ export const ArcadeHub: React.FC<ArcadeHubProps> = ({ progress, onSelectGame, on
         position: 'relative',
         minHeight: '100vh',
         width: '100%',
-        maxWidth: '1000px',
+        maxWidth: '1020px',
         margin: '0 auto',
         padding: '36px 20px 80px',
         display: 'flex',
@@ -105,43 +125,42 @@ export const ArcadeHub: React.FC<ArcadeHubProps> = ({ progress, onSelectGame, on
             display: 'inline-flex',
             alignItems: 'center',
             gap: '8px',
-            background: 'rgba(255, 215, 0, 0.12)',
-            border: '1px solid rgba(255, 215, 0, 0.35)',
+            background: 'rgba(220, 38, 38, 0.18)',
+            border: '1px solid rgba(220, 38, 38, 0.45)',
             borderRadius: '9999px',
             padding: '6px 18px',
             marginBottom: '16px',
           }}
         >
           <Sparkles size={16} color="#ffd700" />
-          <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#ffd700', letterSpacing: '0.08em' }}>
-            BIRTHDAY ARCADE UNLOCKED
+          <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#ffd700', letterSpacing: '0.08em' }}>
+            AAKASH & SANJAY'S BIRTHDAY ARCADE
           </span>
         </div>
 
         <h1
           className="gold-text-shimmer neon-title"
           style={{
-            fontSize: 'clamp(2rem, 5vw, 3.2rem)',
-            marginBottom: '12px',
+            fontSize: 'clamp(2.1rem, 5vw, 3.4rem)',
+            marginBottom: '10px',
           }}
         >
           The Birthday Arcade
         </h1>
 
-        <p style={{ color: '#cbd5e1', fontSize: '1rem', maxWidth: '540px', margin: '0 auto' }}>
-          Play mini-games to celebrate {BIRTHDAY_CONFIG.personName}, or unlock the secret birthday surprise whenever
-          you're ready!
+        <p style={{ color: '#cbd5e1', fontSize: '1rem', maxWidth: '580px', margin: '0 auto' }}>
+          Play custom mini-games, test gaming trivia, and unlock the final birthday surprise for {BIRTHDAY_CONFIG.personName}!
         </p>
       </div>
 
-      {/* Progress & Invitation Card */}
+      {/* Progress & Quick Action Bar */}
       <div
         className="glass-panel"
         style={{
           width: '100%',
-          maxWidth: '780px',
+          maxWidth: '860px',
           padding: '20px 24px',
-          marginBottom: '32px',
+          marginBottom: '28px',
           display: 'flex',
           flexDirection: 'column',
           gap: '16px',
@@ -154,15 +173,14 @@ export const ArcadeHub: React.FC<ArcadeHubProps> = ({ progress, onSelectGame, on
             alignItems: 'center',
             justifyContent: 'space-between',
             flexWrap: 'wrap',
-            gap: '12px',
+            gap: '14px',
           }}
         >
-          {/* Progress Status */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div
               style={{
-                width: '40px',
-                height: '40px',
+                width: '44px',
+                height: '44px',
                 borderRadius: '50%',
                 background: 'rgba(255, 215, 0, 0.15)',
                 display: 'flex',
@@ -170,21 +188,18 @@ export const ArcadeHub: React.FC<ArcadeHubProps> = ({ progress, onSelectGame, on
                 justifyContent: 'center',
               }}
             >
-              <Trophy size={20} color="#ffd700" />
+              <Trophy size={22} color="#ffd700" />
             </div>
             <div>
-              <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#fff' }}>
+              <div style={{ fontSize: '1rem', fontWeight: 800, color: '#fff' }}>
                 Arcade Progress: {completedCount} / {games.length} Games Mastered
               </div>
-              <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
-                {completedCount === games.length
-                  ? 'All mini-games conquered! You are a true champion.'
-                  : 'Play any game or jump directly to the birthday reveal.'}
+              <div style={{ fontSize: '0.82rem', color: '#94a3b8' }}>
+                Play in any order, or jump straight to the final birthday card!
               </div>
             </div>
           </div>
 
-          {/* Direct CTA to Final Surprise */}
           <button
             onClick={() => {
               soundSystem.playClick();
@@ -198,7 +213,7 @@ export const ArcadeHub: React.FC<ArcadeHubProps> = ({ progress, onSelectGame, on
             }}
           >
             <Gift size={18} fill="#120d02" />
-            <span>OPEN BIRTHDAY SURPRISE</span>
+            <span>FINAL BIRTHDAY SURPRISE</span>
             <ChevronRight size={16} />
           </button>
         </div>
@@ -216,8 +231,8 @@ export const ArcadeHub: React.FC<ArcadeHubProps> = ({ progress, onSelectGame, on
           <div
             style={{
               height: '100%',
-              width: `${Math.max(10, progressPercent)}%`,
-              background: 'linear-gradient(90deg, #ffd700 0%, #e040fb 100%)',
+              width: `${Math.max(12, progressPercent)}%`,
+              background: 'linear-gradient(90deg, #ffd700 0%, #dc2626 50%, #e040fb 100%)',
               borderRadius: '9999px',
               transition: 'width 0.5s ease',
             }}
@@ -225,11 +240,146 @@ export const ArcadeHub: React.FC<ArcadeHubProps> = ({ progress, onSelectGame, on
         </div>
       </div>
 
+      {/* Special Challenge Banners (Quizzes & Movie Challenge) */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+          gap: '16px',
+          width: '100%',
+          maxWidth: '860px',
+          marginBottom: '28px',
+        }}
+      >
+        {/* Gaming Quiz Card */}
+        <div
+          onClick={() => {
+            soundSystem.playClick();
+            onOpenGamingQuiz();
+          }}
+          className="glass-panel"
+          style={{
+            padding: '18px 20px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '14px',
+            border: '1px solid rgba(220, 38, 38, 0.4)',
+            background: 'linear-gradient(135deg, rgba(220, 38, 38, 0.15) 0%, rgba(20, 15, 30, 0.7) 100%)',
+            transition: 'transform 0.2s ease',
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-3px)')}
+          onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
+        >
+          <div
+            style={{
+              width: '46px',
+              height: '46px',
+              borderRadius: '12px',
+              background: 'rgba(220, 38, 38, 0.25)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#ef4444',
+            }}
+          >
+            <Gamepad2 size={24} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: '0.98rem', fontWeight: 800, color: '#fff' }}>Gaming Quiz</div>
+            <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>GTA, Spidey, Free Fire trivia</div>
+          </div>
+          <ChevronRight size={18} color="#ef4444" />
+        </div>
+
+        {/* Funny & Personal Quiz Card */}
+        <div
+          onClick={() => {
+            soundSystem.playClick();
+            onOpenPersonalQuiz();
+          }}
+          className="glass-panel"
+          style={{
+            padding: '18px 20px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '14px',
+            border: '1px solid rgba(224, 64, 251, 0.4)',
+            background: 'linear-gradient(135deg, rgba(224, 64, 251, 0.15) 0%, rgba(20, 15, 30, 0.7) 100%)',
+            transition: 'transform 0.2s ease',
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-3px)')}
+          onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
+        >
+          <div
+            style={{
+              width: '46px',
+              height: '46px',
+              borderRadius: '12px',
+              background: 'rgba(224, 64, 251, 0.25)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#e040fb',
+            }}
+          >
+            <Laugh size={24} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: '0.98rem', fontWeight: 800, color: '#fff' }}>Personal Roast Quiz</div>
+            <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Aakash & Sanjay's inside jokes</div>
+          </div>
+          <ChevronRight size={18} color="#e040fb" />
+        </div>
+
+        {/* Movie Lover Challenge Card */}
+        <div
+          onClick={() => {
+            soundSystem.playClick();
+            onOpenMovieExperience();
+          }}
+          className="glass-panel"
+          style={{
+            padding: '18px 20px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '14px',
+            border: '1px solid rgba(255, 215, 0, 0.4)',
+            background: 'linear-gradient(135deg, rgba(255, 215, 0, 0.15) 0%, rgba(20, 15, 30, 0.7) 100%)',
+            transition: 'transform 0.2s ease',
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-3px)')}
+          onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
+        >
+          <div
+            style={{
+              width: '46px',
+              height: '46px',
+              borderRadius: '12px',
+              background: 'rgba(255, 215, 0, 0.25)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#ffd700',
+            }}
+          >
+            <Film size={24} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: '0.98rem', fontWeight: 800, color: '#fff' }}>Movie Lover Challenge</div>
+            <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Guess iconic films from clues</div>
+          </div>
+          <ChevronRight size={18} color="#ffd700" />
+        </div>
+      </div>
+
       {/* Grid of Mini-Games */}
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(270px, 1fr))',
           gap: '20px',
           width: '100%',
           maxWidth: '920px',
@@ -247,10 +397,8 @@ export const ArcadeHub: React.FC<ArcadeHubProps> = ({ progress, onSelectGame, on
               flexDirection: 'column',
               justifyContent: 'space-between',
               transition: 'all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-              position: 'relative',
-              overflow: 'hidden',
               border: game.isCompleted
-                ? '1px solid rgba(74, 222, 128, 0.4)'
+                ? '1px solid rgba(74, 222, 128, 0.45)'
                 : '1px solid rgba(255, 255, 255, 0.12)',
             }}
             onMouseEnter={(e) => {
@@ -261,13 +409,12 @@ export const ArcadeHub: React.FC<ArcadeHubProps> = ({ progress, onSelectGame, on
             onMouseLeave={(e) => {
               e.currentTarget.style.transform = 'translateY(0px)';
               e.currentTarget.style.borderColor = game.isCompleted
-                ? 'rgba(74, 222, 128, 0.4)'
+                ? 'rgba(74, 222, 128, 0.45)'
                 : 'rgba(255, 255, 255, 0.12)';
               e.currentTarget.style.boxShadow = '0 12px 40px rgba(0, 0, 0, 0.5)';
             }}
           >
             <div>
-              {/* Card Top: Icon & Category */}
               <div
                 style={{
                   display: 'flex',
@@ -292,7 +439,6 @@ export const ArcadeHub: React.FC<ArcadeHubProps> = ({ progress, onSelectGame, on
                   {game.icon}
                 </div>
 
-                {/* Status Badge */}
                 {game.isCompleted ? (
                   <div
                     style={{
@@ -327,31 +473,15 @@ export const ArcadeHub: React.FC<ArcadeHubProps> = ({ progress, onSelectGame, on
                 )}
               </div>
 
-              {/* Title & Description */}
-              <h3
-                style={{
-                  fontSize: '1.35rem',
-                  fontWeight: 800,
-                  color: '#fff',
-                  marginBottom: '8px',
-                }}
-              >
+              <h3 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#fff', marginBottom: '8px' }}>
                 {game.title}
               </h3>
 
-              <p
-                style={{
-                  color: '#94a3b8',
-                  fontSize: '0.88rem',
-                  lineHeight: 1.5,
-                  marginBottom: '20px',
-                }}
-              >
+              <p style={{ color: '#94a3b8', fontSize: '0.86rem', lineHeight: 1.5, marginBottom: '20px' }}>
                 {game.subtitle}
               </p>
             </div>
 
-            {/* Bottom: Best score & Action */}
             <div
               style={{
                 display: 'flex',
@@ -361,8 +491,8 @@ export const ArcadeHub: React.FC<ArcadeHubProps> = ({ progress, onSelectGame, on
                 borderTop: '1px solid rgba(255, 255, 255, 0.08)',
               }}
             >
-              <div style={{ fontSize: '0.85rem', color: '#ffd700', fontWeight: 600 }}>
-                {game.bestLabel || 'Not played yet'}
+              <div style={{ fontSize: '0.82rem', color: '#ffd700', fontWeight: 600 }}>
+                {game.bestLabel || 'Ready to play'}
               </div>
 
               <div

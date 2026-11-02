@@ -45,3 +45,4 @@ export const MusicPlayerPill: React.FC = () => {
     </button>
   );
 };
+

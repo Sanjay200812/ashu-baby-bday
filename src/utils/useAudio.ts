@@ -34,3 +34,4 @@ export function useAudio() {
     playClick: () => soundSystem.playClick(),
   };
 }
+

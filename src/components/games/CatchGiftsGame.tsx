@@ -559,3 +559,4 @@ export const CatchGiftsGame: React.FC<CatchGiftsGameProps> = ({ onComplete, onBa
     </div>
   );
 };
+

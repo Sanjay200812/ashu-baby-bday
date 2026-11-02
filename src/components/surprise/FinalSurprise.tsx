@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
 import confetti from 'canvas-confetti';
-import { Sparkles, RotateCcw, ArrowLeft, Flame, Wind } from 'lucide-react';
+import { Sparkles, RotateCcw, ArrowLeft, Flame, Wind, Heart } from 'lucide-react';
 import { BIRTHDAY_CONFIG } from '../../config/birthdayConfig';
 import { soundSystem } from '../../utils/audioSystem';
 import { AudioPlayer } from './AudioPlayer';
@@ -21,18 +21,17 @@ export const FinalSurprise: React.FC<FinalSurpriseProps> = ({ onReplayAll, onBac
 
   // GSAP Cinematic Entrance Sequence
   useEffect(() => {
-    // Continuous initial celebration confetti
     const launchConfetti = () => {
       confetti({
-        particleCount: 80,
+        particleCount: 85,
         spread: 90,
         origin: { y: 0.35, x: 0.5 },
-        colors: ['#ffd700', '#ff4081', '#00e5ff', '#e040fb', '#ffffff'],
+        colors: ['#ffd700', '#dc2626', '#00e5ff', '#e040fb', '#ffffff'],
       });
     };
 
     launchConfetti();
-    const timer = setTimeout(launchConfetti, 1200);
+    const timer = setTimeout(launchConfetti, 1400);
 
     const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
 
@@ -43,7 +42,7 @@ export const FinalSurprise: React.FC<FinalSurpriseProps> = ({ onReplayAll, onBac
     )
       .fromTo(
         photoRef.current,
-        { opacity: 0, scale: 0.8, rotate: -5 },
+        { opacity: 0, scale: 0.8, rotate: -4 },
         { opacity: 1, scale: 1, rotate: 0, duration: 1, ease: 'back.out(1.5)' },
         '-=0.7'
       )
@@ -59,19 +58,16 @@ export const FinalSurprise: React.FC<FinalSurpriseProps> = ({ onReplayAll, onBac
 
   const handleToggleCandles = () => {
     if (candlesLit) {
-      // Blow out!
       soundSystem.playCandleBlow();
       setCandlesLit(false);
 
-      // Huge celebratory confetti shower
       confetti({
-        particleCount: 150,
-        spread: 100,
+        particleCount: 160,
+        spread: 110,
         origin: { y: 0.6 },
-        colors: ['#ffd700', '#ffb703', '#ffffff', '#e040fb', '#4ade80'],
+        colors: ['#ffd700', '#ffb703', '#ffffff', '#e040fb', '#dc2626'],
       });
     } else {
-      // Relight!
       soundSystem.playScore();
       setCandlesLit(true);
     }
@@ -80,11 +76,16 @@ export const FinalSurprise: React.FC<FinalSurpriseProps> = ({ onReplayAll, onBac
   const handleConfettiShower = () => {
     soundSystem.playVictory();
     confetti({
-      particleCount: 100,
-      spread: 80,
+      particleCount: 110,
+      spread: 85,
       origin: { y: 0.5 },
     });
   };
+
+  // Split letter message into readable paragraphs
+  const messageParagraphs = BIRTHDAY_CONFIG.birthdayLetter.message
+    .split('\n\n')
+    .filter((p) => p.trim().length > 0);
 
   return (
     <div
@@ -101,7 +102,7 @@ export const FinalSurprise: React.FC<FinalSurpriseProps> = ({ onReplayAll, onBac
         zIndex: 10,
       }}
     >
-      {/* Top Navigation */}
+      {/* Top Bar Navigation */}
       <div
         style={{
           width: '100%',
@@ -121,7 +122,7 @@ export const FinalSurprise: React.FC<FinalSurpriseProps> = ({ onReplayAll, onBac
           style={{ padding: '8px 16px', fontSize: '0.88rem' }}
         >
           <ArrowLeft size={16} />
-          <span>Arcade</span>
+          <span>Arcade Menu</span>
         </button>
 
         <button
@@ -167,7 +168,7 @@ export const FinalSurprise: React.FC<FinalSurpriseProps> = ({ onReplayAll, onBac
               position: 'absolute',
               inset: -8,
               borderRadius: '50%',
-              background: 'conic-gradient(from 0deg, #ffd700, #ff4081, #00e5ff, #ffd700)',
+              background: 'conic-gradient(from 0deg, #ffd700, #dc2626, #00e5ff, #ffd700)',
               filter: 'blur(12px)',
               opacity: 0.65,
               animation: 'spin 12s linear infinite',
@@ -196,14 +197,10 @@ export const FinalSurprise: React.FC<FinalSurpriseProps> = ({ onReplayAll, onBac
                 objectFit: 'cover',
                 display: 'block',
               }}
-              onError={(e) => {
-                // If image error, fallback to avatar silhouette
-                (e.target as HTMLElement).style.display = 'none';
-              }}
             />
           </div>
 
-          {/* Crown Overlay */}
+          {/* Crown */}
           <div
             style={{
               position: 'absolute',
@@ -218,7 +215,7 @@ export const FinalSurprise: React.FC<FinalSurpriseProps> = ({ onReplayAll, onBac
           </div>
         </div>
 
-        {/* Personalized Heading */}
+        {/* Heading */}
         <h1
           className="gold-text-shimmer neon-title"
           style={{
@@ -244,7 +241,7 @@ export const FinalSurprise: React.FC<FinalSurpriseProps> = ({ onReplayAll, onBac
           {BIRTHDAY_CONFIG.surpriseSubheading}
         </p>
 
-        {/* Interactive Birthday Cake Illustration */}
+        {/* Interactive Birthday Cake */}
         <div
           style={{
             margin: '0 auto 36px',
@@ -268,7 +265,6 @@ export const FinalSurprise: React.FC<FinalSurpriseProps> = ({ onReplayAll, onBac
             <div style={{ display: 'flex', gap: '32px', marginBottom: '4px', position: 'relative', zIndex: 3 }}>
               {[0, 1, 2].map((i) => (
                 <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                  {/* Candle Flame */}
                   {candlesLit ? (
                     <div
                       style={{
@@ -291,12 +287,11 @@ export const FinalSurprise: React.FC<FinalSurpriseProps> = ({ onReplayAll, onBac
                       }}
                     />
                   )}
-                  {/* Candle Stick */}
                   <div
                     style={{
                       width: '8px',
                       height: '24px',
-                      background: 'repeating-linear-gradient(45deg, #ffd700, #ffd700 4px, #e040fb 4px, #e040fb 8px)',
+                      background: 'repeating-linear-gradient(45deg, #ffd700, #ffd700 4px, #dc2626 4px, #dc2626 8px)',
                       borderRadius: '3px 3px 0 0',
                     }}
                   />
@@ -317,7 +312,6 @@ export const FinalSurprise: React.FC<FinalSurpriseProps> = ({ onReplayAll, onBac
                 zIndex: 2,
               }}
             >
-              {/* Icing drips */}
               <div
                 style={{
                   position: 'absolute',
@@ -346,7 +340,6 @@ export const FinalSurprise: React.FC<FinalSurpriseProps> = ({ onReplayAll, onBac
                 marginTop: '-2px',
               }}
             >
-              {/* Gold celebratory decorative dots */}
               <div
                 style={{
                   display: 'flex',
@@ -370,7 +363,6 @@ export const FinalSurprise: React.FC<FinalSurpriseProps> = ({ onReplayAll, onBac
             </div>
           </div>
 
-          {/* Blow / Light Candles Button */}
           <button
             onClick={handleToggleCandles}
             className="btn-secondary"
@@ -396,15 +388,15 @@ export const FinalSurprise: React.FC<FinalSurpriseProps> = ({ onReplayAll, onBac
           </button>
         </div>
 
-        {/* Personalized Letter Scroll */}
+        {/* Personalized Message Signed by Aakash & Sanjay */}
         <div
           ref={letterRef}
           style={{
             width: '100%',
             maxWidth: '560px',
-            background: 'rgba(15, 17, 30, 0.65)',
+            background: 'rgba(15, 17, 30, 0.75)',
             backdropFilter: 'blur(12px)',
-            border: '1px solid rgba(255, 215, 0, 0.25)',
+            border: '1px solid rgba(255, 215, 0, 0.3)',
             borderRadius: '20px',
             padding: '28px 24px',
             textAlign: 'left',
@@ -412,38 +404,39 @@ export const FinalSurprise: React.FC<FinalSurpriseProps> = ({ onReplayAll, onBac
             boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08), 0 10px 30px rgba(0,0,0,0.4)',
           }}
         >
-          <div
-            style={{
-              fontFamily: 'Cinzel, serif',
-              fontSize: '1.25rem',
-              fontWeight: 700,
-              color: '#ffd700',
-              marginBottom: '16px',
-            }}
-          >
-            {BIRTHDAY_CONFIG.birthdayLetter.salutation}
-          </div>
-
-          {BIRTHDAY_CONFIG.birthdayLetter.paragraphs.map((para, idx) => (
+          {messageParagraphs.map((para, idx) => (
             <p
               key={idx}
               style={{
-                fontSize: '0.98rem',
-                lineHeight: 1.7,
+                fontSize: '1rem',
+                lineHeight: 1.75,
                 color: '#e2e8f0',
-                marginBottom: '14px',
+                marginBottom: '16px',
               }}
             >
               {para}
             </p>
           ))}
 
-          <div style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}>
-            <div style={{ fontSize: '0.92rem', color: '#94a3b8', fontStyle: 'italic', marginBottom: '4px' }}>
-              {BIRTHDAY_CONFIG.birthdayLetter.closing}
+          {/* Signature by Aakash & Sanjay */}
+          <div style={{ marginTop: '24px', paddingTop: '18px', borderTop: '1px solid rgba(255, 215, 0, 0.2)' }}>
+            <div
+              style={{
+                fontSize: '1.35rem',
+                fontWeight: 900,
+                color: '#ffd700',
+                fontFamily: 'Cinzel, serif',
+                letterSpacing: '0.04em',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+              }}
+            >
+              <span>{BIRTHDAY_CONFIG.birthdayLetter.signature}</span>
+              <Heart size={20} fill="#dc2626" color="#dc2626" />
             </div>
-            <div style={{ fontSize: '1.15rem', fontWeight: 800, color: '#ffd700', fontFamily: 'Cinzel, serif' }}>
-              {BIRTHDAY_CONFIG.birthdayLetter.signature}
+            <div style={{ fontSize: '0.85rem', color: '#94a3b8', fontStyle: 'italic', marginTop: '4px' }}>
+              Your forever brothers & partners-in-crime
             </div>
           </div>
         </div>
@@ -489,7 +482,6 @@ export const FinalSurprise: React.FC<FinalSurpriseProps> = ({ onReplayAll, onBac
         </div>
       </div>
 
-      {/* Candle flicker animation */}
       <style>{`
         @keyframes flicker {
           0% { transform: scale(1) rotate(-1deg); }

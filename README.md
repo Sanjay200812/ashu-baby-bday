@@ -94,3 +94,4 @@ export const BIRTHDAY_CONFIG: BirthdayConfig = {
 - **Mobile Phones & Tablets**: Full responsive touch controls (tap to flap, drag basket, tap cards, tap balloons).
 - **Desktop**: Mouse clicks, Spacebar jump, Arrow keys for basket.
 - **Audio**: Respects modern browser autoplay restrictions; sound effects and music activate cleanly on user interaction.
+
