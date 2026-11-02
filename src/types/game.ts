@@ -6,6 +6,8 @@ export type ScreenType =
   | 'QUIZ_GAMING'
   | 'QUIZ_PERSONAL'
   | 'MOVIE_EXPERIENCE'
+  | 'FOODIE'
+  | 'SKILLS'
   | 'SURPRISE';
 
 export type MiniGameId =

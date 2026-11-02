@@ -13,6 +13,9 @@ import {
   Film,
   Laugh,
   Flame,
+  Utensils,
+  UserCheck,
+  Video,
 } from 'lucide-react';
 import { GameProgress, MiniGameId } from '../../types/game';
 import { BIRTHDAY_CONFIG } from '../../config/birthdayConfig';
@@ -24,6 +27,8 @@ interface ArcadeHubProps {
   onOpenGamingQuiz: () => void;
   onOpenPersonalQuiz: () => void;
   onOpenMovieExperience: () => void;
+  onOpenFoodie: () => void;
+  onOpenSkills: () => void;
   onOpenSurprise: () => void;
   onOpenCli: () => void;
   onOpenDashboard: () => void;
@@ -46,6 +51,8 @@ export const ArcadeHub: React.FC<ArcadeHubProps> = ({
   onOpenGamingQuiz,
   onOpenPersonalQuiz,
   onOpenMovieExperience,
+  onOpenFoodie,
+  onOpenSkills,
   onOpenSurprise,
   onOpenCli,
   onOpenDashboard,
@@ -603,6 +610,194 @@ export const ArcadeHub: React.FC<ArcadeHubProps> = ({
             </div>
           </div>
         ))}
+      </div>
+
+      {/* Special Intelligence & Archives Section */}
+      <div style={{ width: '100%', maxWidth: '920px', marginTop: '36px' }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            color: '#00e5ff',
+            fontSize: '0.82rem',
+            fontWeight: 800,
+            letterSpacing: '0.08em',
+            marginBottom: '14px',
+            borderBottom: '1px solid rgba(0, 229, 255, 0.25)',
+            paddingBottom: '8px',
+          }}
+        >
+          <Cpu size={16} />
+          <span>DEEP INTELLIGENCE ARCHIVES // FOODIE & SKILLS</span>
+        </div>
+
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+            gap: '16px',
+          }}
+        >
+          {/* Food Memories Card */}
+          <div
+            onClick={() => {
+              soundSystem.playClick();
+              onOpenFoodie();
+            }}
+            className="terminal-panel"
+            style={{
+              padding: '20px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '14px',
+              border: '1px solid rgba(245, 158, 11, 0.4)',
+              transition: 'all 0.2s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = '#f59e0b';
+              e.currentTarget.style.transform = 'translateY(-3px)';
+              e.currentTarget.style.boxShadow = '0 0 25px rgba(245, 158, 11, 0.3)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = 'rgba(245, 158, 11, 0.4)';
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = 'none';
+            }}
+          >
+            <div
+              style={{
+                width: '48px',
+                height: '48px',
+                borderRadius: '6px',
+                background: 'rgba(245, 158, 11, 0.15)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#f59e0b',
+                fontSize: '1.4rem',
+              }}
+            >
+              🍲
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: '0.92rem', fontWeight: 800, color: '#f59e0b' }}>
+                FOOD MEMORIES
+              </div>
+              <div style={{ fontSize: '0.78rem', color: '#cbd5e1' }}>
+                Foodie Restaurant Chronicles // 7 Photos
+              </div>
+            </div>
+            <ChevronRight size={18} color="#f59e0b" />
+          </div>
+
+          {/* Ashuu's Skills Card */}
+          <div
+            onClick={() => {
+              soundSystem.playClick();
+              onOpenSkills();
+            }}
+            className="terminal-panel"
+            style={{
+              padding: '20px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '14px',
+              border: '1px solid rgba(0, 229, 255, 0.4)',
+              transition: 'all 0.2s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = '#00e5ff';
+              e.currentTarget.style.transform = 'translateY(-3px)';
+              e.currentTarget.style.boxShadow = '0 0 25px rgba(0, 229, 255, 0.3)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = 'rgba(0, 229, 255, 0.4)';
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = 'none';
+            }}
+          >
+            <div
+              style={{
+                width: '48px',
+                height: '48px',
+                borderRadius: '6px',
+                background: 'rgba(0, 229, 255, 0.15)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#00e5ff',
+                fontSize: '1.4rem',
+              }}
+            >
+              👑
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: '0.92rem', fontWeight: 800, color: '#00e5ff' }}>
+                ASHUU'S SKILLS
+              </div>
+              <div style={{ fontSize: '0.78rem', color: '#cbd5e1' }}>
+                CodeXa Agency Founder // Official Dossier
+              </div>
+            </div>
+            <ChevronRight size={18} color="#00e5ff" />
+          </div>
+
+          {/* Special Video Reel Transmission */}
+          <div
+            onClick={() => {
+              soundSystem.playClick();
+              onOpenSurprise();
+            }}
+            className="terminal-panel"
+            style={{
+              padding: '20px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '14px',
+              border: '1px solid rgba(0, 255, 102, 0.4)',
+              transition: 'all 0.2s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = '#00ff66';
+              e.currentTarget.style.transform = 'translateY(-3px)';
+              e.currentTarget.style.boxShadow = '0 0 25px rgba(0, 255, 102, 0.3)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = 'rgba(0, 255, 102, 0.4)';
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = 'none';
+            }}
+          >
+            <div
+              style={{
+                width: '48px',
+                height: '48px',
+                borderRadius: '6px',
+                background: 'rgba(0, 255, 102, 0.15)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#00ff66',
+                fontSize: '1.4rem',
+              }}
+            >
+              🎬
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: '0.92rem', fontWeight: 800, color: '#00ff66' }}>
+                SPECIAL VIDEO ARCHIVE
+              </div>
+              <div style={{ fontSize: '0.78rem', color: '#cbd5e1' }}>
+                Birthday Surprise Reel // Full MP4 Transmission
+              </div>
+            </div>
+            <ChevronRight size={18} color="#00ff66" />
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -41,13 +41,25 @@ export interface BirthdayConfig {
   lockPassword: string; // 03112005
   signers: string[]; // ["Aakash", "Sanjay"]
 
-  // 2. Personal Assets (in public/images/ and public/audio/)
+  // 2. Personal Assets (in public/images/, public/videos/, and public/audio/)
   photoUrl: string;
   characterFaceUrl: string;
   sleepingPhotoUrl: string;
   sleepingPhotoUrl2?: string;
   eatingPhotoUrl: string;
-  specialVideoUrl?: string;
+  specialVideoUrl: string;
+  loseClipUrl: string;
+  gameBgMusicUrl: string;
+  ashuuSkillsImageUrl: string;
+  foodiePhotos: string[];
+  ashuuSkillsProfile: {
+    agency: string;
+    founder: string;
+    skills: { name: string; icon: string; category: string }[];
+    motto: string;
+    credit: string;
+    pillars: string[];
+  };
   birthdaySongUrl: string;
   songTitle: string;
   songArtist: string;
@@ -101,7 +113,35 @@ export const BIRTHDAY_CONFIG: BirthdayConfig = {
   sleepingPhotoUrl: "/images/sleeping-photo-1.jpeg",
   sleepingPhotoUrl2: "/images/sleeping-photo-2.jpeg",
   eatingPhotoUrl: "/images/eating-photo.jpeg",
-  specialVideoUrl: "/images/special-video.mp4",
+  specialVideoUrl: "/videos/special-video.mp4",
+  loseClipUrl: "/videos/lose-clip.mp4",
+  gameBgMusicUrl: "/audio/bg-music.mp3",
+  ashuuSkillsImageUrl: "/images/ashuu-skills.png",
+  foodiePhotos: [
+    "/images/foodie/1.jpeg",
+    "/images/foodie/2.jpeg",
+    "/images/foodie/3.jpeg",
+    "/images/foodie/4.jpeg",
+    "/images/foodie/5.jpeg",
+    "/images/foodie/6.jpeg",
+    "/images/foodie/7.jpeg",
+  ],
+  ashuuSkillsProfile: {
+    agency: "CodeXa Agency",
+    founder: "Ashuuu",
+    skills: [
+      { name: "Hacker", icon: "💻", category: "Security & Systems" },
+      { name: "Pro Player", icon: "🎮", category: "Battle Royale & Gaming" },
+      { name: "Lover Boy", icon: "💔", category: "Emotional Intel" },
+      { name: "Depression Guy", icon: "☹️", category: "Night Owl Vibe" },
+      { name: "Developer", icon: "</>", category: "Full-Stack Code" },
+      { name: "Food Gang", icon: "🍴", category: "Biryani & Feast Protocol" },
+      { name: "Movie Gang", icon: "🎬", category: "Cinema & Lore Master" },
+    ],
+    motto: "Build. Play. Eat. Repeat.",
+    credit: "By Sanju #co-founder",
+    pillars: ["TECH", "GAMES", "MOVIES", "FOOD", "LIFE"],
+  },
   birthdaySongUrl: "/audio/birthday-song.mp3",
   songTitle: "South Dev Cyber Anthem v20.05",
   songArtist: "Composed & Injected by Aakash & Sanjay",
@@ -148,8 +188,8 @@ Happy Birthday, South Dev!`,
     darkBg: "#05070a",
   },
 
-  // 6. Flap Target Score
-  flapGoalScore: 10,
+  // 6. Flap Target Score: 12 Successful Passes to Unlock Birthday Website
+  flapGoalScore: 12,
 
   // 7. Secret Data Fragments
   dataFragments: [

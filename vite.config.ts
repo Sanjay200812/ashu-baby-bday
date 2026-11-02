@@ -14,6 +14,7 @@ export default defineConfig({
         '**/public/**',
         '**/*.mp4',
         '**/*.mp3',
+        '**/*.mpeg',
         '**/*.wav',
         '**/.git/**',
       ],

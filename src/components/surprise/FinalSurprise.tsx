@@ -22,9 +22,16 @@ import { AudioPlayer } from './AudioPlayer';
 interface FinalSurpriseProps {
   onReplayAll: () => void;
   onBackToArcade: () => void;
+  onOpenFoodie?: () => void;
+  onOpenSkills?: () => void;
 }
 
-export const FinalSurprise: React.FC<FinalSurpriseProps> = ({ onReplayAll, onBackToArcade }) => {
+export const FinalSurprise: React.FC<FinalSurpriseProps> = ({
+  onReplayAll,
+  onBackToArcade,
+  onOpenFoodie,
+  onOpenSkills,
+}) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const photoRef = useRef<HTMLDivElement>(null);
@@ -557,13 +564,39 @@ export const FinalSurprise: React.FC<FinalSurpriseProps> = ({ onReplayAll, onBac
         </div>
 
         {/* Actions */}
-        <div style={{ display: 'flex', gap: '14px', justifyContent: 'center', flexWrap: 'wrap' }}>
-          <button onClick={onBackToArcade} className="btn-cyber-secondary" style={{ padding: '12px 24px' }}>
+        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
+          {onOpenFoodie && (
+            <button
+              onClick={() => {
+                soundSystem.playClick();
+                onOpenFoodie();
+              }}
+              className="btn-cyber-secondary"
+              style={{ padding: '10px 20px', borderColor: '#f59e0b', color: '#f59e0b' }}
+            >
+              <span>🍲 [ FOOD MEMORIES ]</span>
+            </button>
+          )}
+
+          {onOpenSkills && (
+            <button
+              onClick={() => {
+                soundSystem.playClick();
+                onOpenSkills();
+              }}
+              className="btn-cyber-secondary"
+              style={{ padding: '10px 20px', borderColor: '#00e5ff', color: '#00e5ff' }}
+            >
+              <span>👑 [ ASHUU'S SKILLS ]</span>
+            </button>
+          )}
+
+          <button onClick={onBackToArcade} className="btn-cyber-secondary" style={{ padding: '10px 20px' }}>
             <ArrowLeft size={16} />
             <span>[ RETURN TO ARCADE ]</span>
           </button>
 
-          <button onClick={onReplayAll} className="btn-cyber-primary" style={{ padding: '12px 26px' }}>
+          <button onClick={onReplayAll} className="btn-cyber-primary" style={{ padding: '10px 22px' }}>
             <RotateCcw size={16} />
             <span>[ REBOOT SYSTEM INTRUSION ]</span>
           </button>

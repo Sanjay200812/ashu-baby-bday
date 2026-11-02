@@ -18,13 +18,43 @@ export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({
 }) => {
   const gameContainerRef = useRef<HTMLDivElement>(null);
   const phaserGameRef = useRef<Phaser.Game | null>(null);
+  const bgAudioRef = useRef<HTMLAudioElement | null>(null);
 
   const [score, setScore] = useState<number>(0);
   const [bestScore, setBestScore] = useState<number>(() => {
-    return parseInt(localStorage.getItem('birthday_flap_best') || '0', 10);
+    try {
+      return parseInt(localStorage.getItem('birthday_flap_best') || '0', 10);
+    } catch {
+      return 0;
+    }
   });
   const [gameState, setGameState] = useState<'IDLE' | 'PLAYING' | 'GAMEOVER' | 'COMPLETE'>('IDLE');
-  const [levelGoal] = useState<number>(BIRTHDAY_CONFIG.flapGoalScore || 10);
+  const levelGoal = BIRTHDAY_CONFIG.flapGoalScore || 12;
+
+  // Background Game Music: Only plays while actively in PLAYING state
+  useEffect(() => {
+    const audio = new Audio(BIRTHDAY_CONFIG.gameBgMusicUrl);
+    audio.loop = true;
+    audio.volume = 0.55;
+    bgAudioRef.current = audio;
+
+    return () => {
+      audio.pause();
+      audio.currentTime = 0;
+      bgAudioRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (gameState === 'PLAYING') {
+      bgAudioRef.current?.play().catch(() => {});
+    } else {
+      bgAudioRef.current?.pause();
+      if (gameState === 'IDLE') {
+        if (bgAudioRef.current) bgAudioRef.current.currentTime = 0;
+      }
+    }
+  }, [gameState]);
 
   useEffect(() => {
     if (!gameContainerRef.current) return;
@@ -60,7 +90,11 @@ export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({
 
       create() {
         this.currentScore = 0;
-        this.localBestScore = parseInt(localStorage.getItem('birthday_flap_best') || '0', 10);
+        try {
+          this.localBestScore = parseInt(localStorage.getItem('birthday_flap_best') || '0', 10);
+        } catch {
+          this.localBestScore = 0;
+        }
         this.currentGameState = 'IDLE';
         this.passedPipes.clear();
 
@@ -80,7 +114,7 @@ export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({
         }
 
         // Floating hex code fragments in background
-        const hexCodes = ['0x7F', '0x2A', '0xSOUTH', '0xDEV', '0x2005', '0xACK'];
+        const hexCodes = ['0x7F', '0x2A', '0xSOUTH', '0xDEV', '0x2005', '0xCODEXA'];
         this.codeFragments = this.add.group();
         for (let i = 0; i < 8; i++) {
           const txt = this.add.text(
@@ -152,13 +186,13 @@ export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({
           this.triggerGameOver();
         });
 
-        // 7. Inputs
+        // 7. Inputs (Pointer / Touch and Keyboard Spacebar)
         this.input.on('pointerdown', () => this.handleJump());
         this.input.keyboard?.on('keydown-SPACE', () => this.handleJump());
 
         // Obstacle Spawn Timer
         this.obstacleTimer = this.time.addEvent({
-          delay: 1700,
+          delay: 1750,
           callback: this.spawnObstaclePair,
           callbackScope: this,
           loop: true,
@@ -168,10 +202,10 @@ export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({
 
       buildPlayerCharacter() {
         this.player = this.add.container(100, GAME_HEIGHT / 2 - 40);
-        this.player.setSize(50, 50);
+        this.player.setSize(48, 48);
         this.physics.world.enable(this.player);
         this.playerPhysicsBody = this.player.body as Phaser.Physics.Arcade.Body;
-        this.playerPhysicsBody.setCircle(22, 3, 3);
+        this.playerPhysicsBody.setCircle(22, 2, 2);
         this.playerPhysicsBody.setCollideWorldBounds(true);
         this.playerPhysicsBody.allowGravity = false;
 
@@ -183,7 +217,7 @@ export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({
         const thruster = this.add.rectangle(-14, 8, 12, 20, 0x00e5ff);
         this.player.add(thruster);
 
-        // Face
+        // Face Image
         const faceImg = this.add.image(0, -2, 'characterFace');
         faceImg.setDisplaySize(46, 46);
         this.player.add(faceImg);
@@ -192,7 +226,7 @@ export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({
         const visor = this.add.rectangle(0, -6, 32, 6, 0x00ff66, 0.85);
         this.player.add(visor);
 
-        // Floating idle
+        // Floating idle tween
         this.tweens.add({
           targets: this.player,
           y: GAME_HEIGHT / 2 - 20,
@@ -230,8 +264,9 @@ export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({
       spawnObstaclePair() {
         if (this.currentGameState !== 'PLAYING') return;
 
-        const gap = Math.max(145, 175 - Math.floor(this.currentScore / 3) * 5);
-        const speed = -(150 + Math.min(60, this.currentScore * 3));
+        // Gap shrinks slightly as score increases (starts generous at 180px for fair mobile play)
+        const gap = Math.max(150, 180 - Math.floor(this.currentScore / 3) * 6);
+        const speed = -(150 + Math.min(50, this.currentScore * 3));
         const minTop = 60;
         const maxTop = GAME_HEIGHT - GROUND_HEIGHT - gap - 60;
         const topHeight = Phaser.Math.Between(minTop, maxTop);
@@ -290,7 +325,7 @@ export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({
             this.player.angle = Math.min(65, this.player.angle + 2.4);
           }
 
-          // Check score
+          // Check score on passing barrier pairs
           this.obstacles.getChildren().forEach((child) => {
             const obstacle = child as Phaser.GameObjects.Container;
             if (!this.passedPipes.has(obstacle) && obstacle.x + obstacle.width < this.player.x) {
@@ -317,7 +352,11 @@ export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({
         if (this.currentScore > this.localBestScore) {
           this.localBestScore = this.currentScore;
           setBestScore(this.localBestScore);
-          localStorage.setItem('birthday_flap_best', this.localBestScore.toString());
+          try {
+            localStorage.setItem('birthday_flap_best', this.localBestScore.toString());
+          } catch {
+            // Ignore
+          }
         }
 
         if (this.currentScore >= levelGoal && this.currentGameState !== 'COMPLETE') {
@@ -346,8 +385,8 @@ export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({
         this.obstacles.setVelocityX(0);
 
         confetti({
-          particleCount: 120,
-          spread: 80,
+          particleCount: 140,
+          spread: 85,
           origin: { y: 0.5 },
           colors: ['#00ff66', '#00e5ff', '#ffd700', '#ffffff'],
         });
@@ -357,6 +396,8 @@ export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({
 
       restartGame() {
         this.scene.restart();
+        this.currentScore = 0;
+        this.currentGameState = 'IDLE';
         setGameState('IDLE');
         setScore(0);
       }
@@ -500,7 +541,7 @@ export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({
               textTransform: 'uppercase',
             }}
           >
-            GOAL: {levelGoal} UNITS
+            GOAL: {levelGoal} PASSES
           </span>
         </div>
 
@@ -514,51 +555,57 @@ export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              background: 'rgba(5, 7, 10, 0.5)',
+              background: 'rgba(5, 7, 10, 0.55)',
               zIndex: 25,
               pointerEvents: 'none',
+              padding: '20px',
             }}
           >
             <div
               className="terminal-panel"
               style={{
-                padding: '16px 24px',
+                padding: '18px 24px',
                 textAlign: 'center',
                 border: '1px solid #00ff66',
+                boxShadow: '0 0 25px rgba(0, 255, 102, 0.25)',
               }}
             >
-              <div style={{ fontSize: '1rem', fontWeight: 800, color: '#00ff66', marginBottom: '4px' }}>
+              <div style={{ fontSize: '1.05rem', fontWeight: 800, color: '#00ff66', marginBottom: '6px' }}>
                 [ TAP / PRESS SPACE TO FLY ]
               </div>
-              <div style={{ fontSize: '0.78rem', color: '#cbd5e1' }}>Bypass 10 digital barriers to access Arcade!</div>
+              <div style={{ fontSize: '0.82rem', color: '#cbd5e1' }}>
+                Navigate 12 barriers in a single run to unlock Birthday Website!
+              </div>
             </div>
           </div>
         )}
 
-        {/* Game Over Modal */}
+        {/* Lose Screen with lose-clip.mp4 & Prominent Retry Button */}
         {gameState === 'GAMEOVER' && (
           <div
             style={{
               position: 'absolute',
               inset: 0,
-              background: 'rgba(5, 7, 10, 0.92)',
+              background: 'rgba(5, 7, 10, 0.94)',
               backdropFilter: 'blur(8px)',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              padding: '24px',
+              padding: '18px',
               zIndex: 30,
               textAlign: 'center',
+              overflowY: 'auto',
             }}
           >
             <div
               className="terminal-panel"
               style={{
-                padding: '32px 24px',
+                padding: '24px 20px',
                 width: '100%',
-                maxWidth: '320px',
+                maxWidth: '340px',
                 border: '1px solid #ff3344',
+                boxShadow: '0 0 35px rgba(255, 51, 68, 0.35)',
               }}
             >
               <div
@@ -568,40 +615,84 @@ export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({
                   gap: '6px',
                   color: '#ff3344',
                   fontWeight: 800,
-                  fontSize: '1.2rem',
-                  marginBottom: '14px',
+                  fontSize: '1.05rem',
+                  marginBottom: '12px',
+                  letterSpacing: '0.04em',
                 }}
               >
                 <ShieldAlert size={20} />
-                <span>FIREWALL COLLISION</span>
+                <span>FLAP PROTOCOL FAILED</span>
               </div>
 
+              {/* Video Clip with Controls & Autoplay Compliance */}
+              <div
+                style={{
+                  position: 'relative',
+                  width: '100%',
+                  borderRadius: '6px',
+                  overflow: 'hidden',
+                  background: '#000',
+                  border: '1px solid rgba(255, 51, 68, 0.5)',
+                  boxShadow: '0 6px 20px rgba(0, 0, 0, 0.9)',
+                  marginBottom: '14px',
+                }}
+              >
+                <video
+                  src={BIRTHDAY_CONFIG.loseClipUrl}
+                  controls
+                  playsInline
+                  autoPlay
+                  muted
+                  loop
+                  style={{
+                    width: '100%',
+                    maxHeight: '190px',
+                    display: 'block',
+                    backgroundColor: '#000',
+                    objectFit: 'contain',
+                  }}
+                />
+              </div>
+
+              {/* Pass Progress */}
               <div
                 style={{
                   background: 'rgba(255, 51, 68, 0.08)',
                   borderRadius: '4px',
-                  padding: '14px',
-                  marginBottom: '20px',
+                  padding: '10px 14px',
+                  marginBottom: '16px',
                   border: '1px solid rgba(255, 51, 68, 0.25)',
                 }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                  <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Score:</span>
-                  <span style={{ fontWeight: 800, color: '#fff' }}>{score}</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                  <span style={{ color: '#94a3b8', fontSize: '0.82rem' }}>Passes this run:</span>
+                  <span style={{ fontWeight: 800, color: '#fff', fontSize: '0.95rem' }}>{score} / {levelGoal}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Best Record:</span>
-                  <span style={{ fontWeight: 800, color: '#00ff66' }}>{bestScore}</span>
+                  <span style={{ color: '#94a3b8', fontSize: '0.82rem' }}>Best Record:</span>
+                  <span style={{ fontWeight: 800, color: '#00ff66', fontSize: '0.95rem' }}>{bestScore}</span>
+                </div>
+                <div style={{ fontSize: '0.72rem', color: '#ff7080', marginTop: '6px' }}>
+                  Must reach 12 passes in one run to unlock the system!
                 </div>
               </div>
 
+              {/* Prominent Retry Button */}
               <button
                 onClick={handleRestart}
-                className="btn-cyber-primary"
-                style={{ width: '100%', padding: '12px', fontSize: '0.95rem' }}
+                className="btn-cyber-primary pulse-cyber"
+                style={{
+                  width: '100%',
+                  padding: '14px',
+                  fontSize: '1rem',
+                  backgroundColor: 'rgba(0, 255, 102, 0.16)',
+                  borderColor: '#00ff66',
+                  color: '#00ff66',
+                  boxShadow: '0 0 25px rgba(0, 255, 102, 0.4)',
+                }}
               >
                 <RotateCcw size={16} />
-                <span>[ RESTART SEQUENCE ]</span>
+                <span>[ RETRY FLAP SEQUENCE ]</span>
               </button>
             </div>
           </div>
@@ -631,6 +722,7 @@ export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({
                 width: '100%',
                 maxWidth: '340px',
                 border: '1px solid #00ff66',
+                boxShadow: '0 0 35px rgba(0, 255, 102, 0.35)',
               }}
             >
               <div
@@ -647,13 +739,13 @@ export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({
 
               <h2
                 className="text-neon-green"
-                style={{ fontSize: '1.6rem', fontWeight: 900, marginBottom: '8px' }}
+                style={{ fontSize: '1.5rem', fontWeight: 900, marginBottom: '8px' }}
               >
                 ACCESSING SOUTH DEV ARCADE...
               </h2>
 
               <p style={{ color: '#cbd5e1', fontSize: '0.88rem', marginBottom: '24px' }}>
-                You scored <strong style={{ color: '#00ff66' }}>{score}</strong>! The full cyber arcade has been decrypted.
+                12 successful passes achieved! The full cyber arcade & birthday surprise have been decrypted.
               </p>
 
               <button
@@ -664,7 +756,7 @@ export const BirthdayFlapGame: React.FC<BirthdayFlapGameProps> = ({
                 className="btn-cyber-primary pulse-cyber"
                 style={{ width: '100%', padding: '14px', fontSize: '1rem', marginBottom: '12px' }}
               >
-                <span>[ ENTER CYBER ARCADE ]</span>
+                <span>[ ENTER BIRTHDAY ARCADE ]</span>
                 <ChevronRight size={18} />
               </button>
 

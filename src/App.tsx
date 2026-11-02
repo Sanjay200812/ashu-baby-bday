@@ -13,6 +13,8 @@ import { SleepModeGame } from './components/games/SleepModeGame';
 import { GamingQuiz } from './components/quiz/GamingQuiz';
 import { PersonalQuiz } from './components/quiz/PersonalQuiz';
 import { MovieExperience } from './components/movies/MovieExperience';
+import { FoodMemoriesSection } from './components/foodie/FoodMemoriesSection';
+import { AshuuSkillsSection } from './components/profile/AshuuSkillsSection';
 import { FinalSurprise } from './components/surprise/FinalSurprise';
 import { CommandTerminalModal } from './components/terminal/CommandTerminalModal';
 import { SystemStatusModal } from './components/dashboard/SystemStatusModal';
@@ -256,6 +258,8 @@ export const App: React.FC = () => {
               onOpenGamingQuiz={() => setCurrentScreen('QUIZ_GAMING')}
               onOpenPersonalQuiz={() => setCurrentScreen('QUIZ_PERSONAL')}
               onOpenMovieExperience={() => setCurrentScreen('MOVIE_EXPERIENCE')}
+              onOpenFoodie={() => setCurrentScreen('FOODIE')}
+              onOpenSkills={() => setCurrentScreen('SKILLS')}
               onOpenSurprise={() => setCurrentScreen('SURPRISE')}
               onOpenCli={() => setIsCliOpen(true)}
               onOpenDashboard={() => setIsDashboardOpen(true)}
@@ -334,7 +338,17 @@ export const App: React.FC = () => {
         />
       )}
 
-      {/* 8. Final Stage: Birthday Card Signed by Aakash & Sanjay */}
+      {/* 8. Food Memories (Foodie Archives) */}
+      {currentScreen === 'FOODIE' && (
+        <FoodMemoriesSection onBack={() => setCurrentScreen('ARCADE')} />
+      )}
+
+      {/* 9. Ashuu's Skills Profile (CodeXa Founder Dossier) */}
+      {currentScreen === 'SKILLS' && (
+        <AshuuSkillsSection onBack={() => setCurrentScreen('ARCADE')} />
+      )}
+
+      {/* 10. Final Stage: Birthday Card Signed by Aakash & Sanjay */}
       {currentScreen === 'SURPRISE' && (
         <FinalSurprise
           onReplayAll={() => {
@@ -345,6 +359,8 @@ export const App: React.FC = () => {
             setCurrentScreen('ARCADE');
             setActiveMiniGame(null);
           }}
+          onOpenFoodie={() => setCurrentScreen('FOODIE')}
+          onOpenSkills={() => setCurrentScreen('SKILLS')}
         />
       )}
 

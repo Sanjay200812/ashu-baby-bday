@@ -64,6 +64,8 @@ export const CommandTerminalModal: React.FC<CommandTerminalModalProps> = ({
   status    - View live system health & birthday telemetry
   profile   - Display South Dev target intelligence
   games     - Launch South Dev Cyber Arcade
+  skills    - View CodeXa Agency Founder dossier & certified traits
+  foodie    - Access Foodie Restaurant culinary intelligence
   secret    - Decipher hidden Aakash & Sanjay message
   matrix    - Toggle full-screen digital rain stream
   clear     - Wipe terminal output
@@ -101,6 +103,30 @@ export const CommandTerminalModal: React.FC<CommandTerminalModalProps> = ({
   BORN: 03-Nov-2005
   SPECIALTIES: High-speed gaming, midnight coding, infinite sleep duration
   COMPRISING ALLIES: Aakash & Sanjay (Chief Syndicate Architects)`,
+        });
+        break;
+
+      case 'skills':
+        soundSystem.playScore();
+        newHistory.push({
+          type: 'output',
+          text: `[CODEXA AGENCY // DOSSIER]:
+  FOUNDER: Ashuuu 👑
+  AGENCY: CodeXa Agency
+  MOTTO: "Build. Play. Eat. Repeat."
+  CREDIT: By Sanju #co-founder
+  CERTIFIED SKILLS: Hacker, Pro Player, Lover Boy, Depression Guy, Developer, Food Gang, Movie Gang
+  PILLARS: TECH • GAMES • MOVIES • FOOD • LIFE`,
+        });
+        break;
+
+      case 'foodie':
+        soundSystem.playScore();
+        newHistory.push({
+          type: 'output',
+          text: `[FOODIE ARCHIVES]:
+  7 Declassified culinary memory files recovered from Foodie.
+  Access via South Dev Arcade -> Food Memories section.`,
         });
         break;
 
