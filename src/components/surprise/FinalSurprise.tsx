@@ -137,7 +137,7 @@ export const FinalSurprise: React.FC<FinalSurpriseProps> = ({
         justifyContent: 'center',
         zIndex: 10,
         fontFamily: 'var(--font-mono)',
-        backgroundColor: '#050508',
+        backgroundColor: 'transparent',
       }}
     >
       {/* Top Header / Actions */}

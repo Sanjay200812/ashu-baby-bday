@@ -120,7 +120,7 @@ export const BirthdayLockScreen: React.FC<BirthdayLockScreenProps> = ({ onUnlock
         padding: '24px 16px',
         zIndex: 10,
         fontFamily: 'var(--font-mono)',
-        backgroundColor: '#050508',
+        backgroundColor: 'transparent',
       }}
     >
       {/* Top Header */}

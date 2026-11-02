@@ -83,7 +83,7 @@ export const MovieExperience: React.FC<MovieExperienceProps> = ({ onComplete, on
         justifyContent: 'center',
         zIndex: 10,
         fontFamily: 'var(--font-mono)',
-        backgroundColor: '#050508',
+        backgroundColor: 'transparent',
       }}
     >
       {/* Control Instruction Modal in Tenglish */}

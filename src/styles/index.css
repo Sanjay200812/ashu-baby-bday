@@ -34,9 +34,6 @@ html, body {
   height: 100%;
   overflow-x: hidden;
   background-color: #050508;
-  /* Deep atmospheric background with subtle radial glow - NO grid lines or graphs! */
-  background-image: radial-gradient(circle at 50% 10%, rgba(255, 42, 75, 0.12) 0%, transparent 65%);
-  background-attachment: fixed;
   color: var(--terminal-text);
   font-family: var(--font-mono);
   touch-action: manipulation;

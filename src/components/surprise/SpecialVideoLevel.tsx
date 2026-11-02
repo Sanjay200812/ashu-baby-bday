@@ -81,7 +81,7 @@ export const SpecialVideoLevel: React.FC<SpecialVideoLevelProps> = ({ onComplete
         justifyContent: 'center',
         zIndex: 10,
         fontFamily: 'var(--font-mono)',
-        backgroundColor: '#050508',
+        backgroundColor: 'transparent',
       }}
     >
       {/* Top Header */}

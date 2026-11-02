@@ -16,6 +16,7 @@ import { SpecialVideoLevel } from './components/surprise/SpecialVideoLevel';
 import { GiftsSelectionLevel } from './components/gifts/GiftsSelectionLevel';
 import { GtaChaosRunGame } from './components/games/GtaChaosRunGame';
 import { SpiderWebSwingGame } from './components/games/SpiderWebSwingGame';
+import { BackgroundVideo } from './components/common/BackgroundVideo';
 import { soundSystem } from './utils/audioSystem';
 import { BIRTHDAY_CONFIG } from './config/birthdayConfig';
 
@@ -297,6 +298,9 @@ export const App: React.FC = () => {
 
   return (
     <div style={{ position: 'relative', width: '100%', minHeight: '100vh', overflowX: 'hidden' }}>
+      {/* Background Cyber Video (Muted, looping, full-screen) */}
+      <BackgroundVideo />
+
       {/* Full-Screen Tab Switch Warning: "Galaxy without lax!" */}
       <FullScreenGalaxyWarning
         isOpen={showTabWarning}

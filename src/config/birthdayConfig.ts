@@ -57,6 +57,7 @@ export interface BirthdayConfig {
   // Personal Assets
   photoUrl: string;
   bgCardUrl: string; // New bg-card image
+  bgVideoUrl: string; // Background looping cyber video
   characterFaceUrl: string;
   sleepingPhotoUrl: string;
   sleepingPhotoUrl2: string;
@@ -121,6 +122,7 @@ export const BIRTHDAY_CONFIG: BirthdayConfig = {
 
   photoUrl: "/images/birthday-person.png",
   bgCardUrl: "/images/bg-card.png", // New birthday card background
+  bgVideoUrl: "/videos/bg-video.mp4", // Background looping cyber video
   characterFaceUrl: "/images/character-face.png",
   sleepingPhotoUrl: "/images/sleeping-photo-1.png",
   sleepingPhotoUrl2: "/images/sleeping-photo-2.png",

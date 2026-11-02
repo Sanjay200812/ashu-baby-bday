@@ -62,7 +62,7 @@ export const SleepModeGame: React.FC<SleepModeGameProps> = ({ onComplete, onBack
         padding: '16px 12px',
         zIndex: 10,
         fontFamily: 'var(--font-mono)',
-        backgroundColor: '#050508',
+        backgroundColor: 'transparent',
       }}
     >
       {/* Top Header */}

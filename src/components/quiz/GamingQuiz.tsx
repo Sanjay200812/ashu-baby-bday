@@ -83,7 +83,7 @@ export const GamingQuiz: React.FC<GamingQuizProps> = ({ onComplete, onBack }) =>
         justifyContent: 'center',
         zIndex: 10,
         fontFamily: 'var(--font-mono)',
-        backgroundColor: '#050508',
+        backgroundColor: 'transparent',
       }}
     >
       {/* Control Instruction Modal in Tenglish */}

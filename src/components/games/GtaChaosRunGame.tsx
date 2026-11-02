@@ -383,7 +383,7 @@ export const GtaChaosRunGame: React.FC<GtaChaosRunGameProps> = ({ onComplete, on
         padding: '16px 12px',
         zIndex: 10,
         fontFamily: 'var(--font-mono)',
-        backgroundColor: '#050508',
+        backgroundColor: 'transparent',
       }}
     >
       {/* Header */}

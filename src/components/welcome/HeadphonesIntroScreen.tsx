@@ -34,7 +34,7 @@ export const HeadphonesIntroScreen: React.FC<HeadphonesIntroScreenProps> = ({ on
         position: 'relative',
         minHeight: '100vh',
         width: '100%',
-        backgroundColor: '#050508',
+        backgroundColor: 'transparent',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
