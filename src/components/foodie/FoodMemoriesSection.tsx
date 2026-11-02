@@ -350,3 +350,4 @@ export const FoodMemoriesSection: React.FC<FoodMemoriesSectionProps> = ({ onBack
     </div>
   );
 };
+

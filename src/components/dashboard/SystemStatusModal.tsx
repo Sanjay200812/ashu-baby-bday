@@ -30,7 +30,9 @@ export const SystemStatusModal: React.FC<SystemStatusModalProps> = ({ isOpen, on
   ].filter(Boolean).length;
 
   const fragments = BIRTHDAY_CONFIG.dataFragments;
-  const collectedCount = progress.fragmentsCollected.length;
+  const collectedCount = Array.isArray(progress?.fragmentsCollected)
+    ? progress.fragmentsCollected.length
+    : 0;
 
   return (
     <div
@@ -146,7 +148,9 @@ export const SystemStatusModal: React.FC<SystemStatusModalProps> = ({ isOpen, on
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {fragments.map((frag) => {
-                const isFound = progress.fragmentsCollected.includes(frag.id);
+                const isFound =
+                  Array.isArray(progress?.fragmentsCollected) &&
+                  progress.fragmentsCollected.includes(frag.id);
                 return (
                   <div
                     key={frag.id}

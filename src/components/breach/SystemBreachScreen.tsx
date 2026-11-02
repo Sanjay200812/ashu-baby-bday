@@ -20,7 +20,10 @@ export const SystemBreachScreen: React.FC<SystemBreachScreenProps> = ({ onEnter 
     let logIndex = 0;
     const logInterval = setInterval(() => {
       if (logIndex < logs.length) {
-        setDisplayedLogs((prev) => [...prev, logs[logIndex]]);
+        const nextLog = logs[logIndex];
+        if (nextLog) {
+          setDisplayedLogs((prev) => [...prev, nextLog]);
+        }
         setProgress(Math.round(((logIndex + 1) / logs.length) * 100));
         soundSystem.playClick();
         logIndex++;
@@ -36,7 +39,7 @@ export const SystemBreachScreen: React.FC<SystemBreachScreenProps> = ({ onEnter 
 
   const handleSkip = () => {
     soundSystem.playClick();
-    setDisplayedLogs(logs);
+    setDisplayedLogs(logs.filter(Boolean));
     setProgress(100);
     setIsBootComplete(true);
   };
@@ -119,26 +122,27 @@ export const SystemBreachScreen: React.FC<SystemBreachScreenProps> = ({ onEnter 
         <div style={{ padding: '28px 24px', minHeight: '340px' }}>
           {/* Boot Log Stream */}
           <div style={{ marginBottom: '24px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            {displayedLogs.map((log, idx) => (
-              <div
-                key={idx}
-                style={{
-                  fontSize: '0.92rem',
-                  color:
-                    log.includes('WARNING')
-                      ? '#ff3344'
-                      : log.includes('TARGET') || log.includes('CODENAME')
-                      ? '#00e5ff'
-                      : '#00ff66',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                }}
-              >
-                <span style={{ color: 'rgba(0, 255, 102, 0.5)' }}>&gt;</span>
-                <span>{log}</span>
-              </div>
-            ))}
+            {displayedLogs.map((log, idx) => {
+              if (!log) return null;
+              const isWarning = typeof log === 'string' && log.includes('WARNING');
+              const isHighlight =
+                typeof log === 'string' && (log.includes('TARGET') || log.includes('CODENAME'));
+              return (
+                <div
+                  key={idx}
+                  style={{
+                    fontSize: '0.92rem',
+                    color: isWarning ? '#ff3344' : isHighlight ? '#00e5ff' : '#00ff66',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                  }}
+                >
+                  <span style={{ color: 'rgba(0, 255, 102, 0.5)' }}>&gt;</span>
+                  <span>{log}</span>
+                </div>
+              );
+            })}
 
             {!isBootComplete && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

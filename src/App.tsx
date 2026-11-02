@@ -120,25 +120,21 @@ export const App: React.FC = () => {
 
   const awardFragment = (fragmentId: number) => {
     setProgress((prev) => {
-      if (!prev.fragmentsCollected.includes(fragmentId)) {
+      const frags = Array.isArray(prev?.fragmentsCollected) ? prev.fragmentsCollected : [];
+      if (!frags.includes(fragmentId)) {
         soundSystem.playScore();
         return {
           ...prev,
-          fragmentsCollected: [...prev.fragmentsCollected, fragmentId],
+          fragmentsCollected: [...frags, fragmentId],
         };
       }
       return prev;
     });
   };
 
-  // Progression Handlers
+  // Progression Handlers: Load -> Opening Game -> Pass 12 -> Birthday Auth -> Arcade
   const handleBreachComplete = () => {
     setProgress((p) => ({ ...p, isBreached: true }));
-    setCurrentScreen('AUTH');
-  };
-
-  const handleAuthComplete = () => {
-    setProgress((p) => ({ ...p, isUnlocked: true }));
     setCurrentScreen('GAME_FLAP');
   };
 
@@ -149,8 +145,17 @@ export const App: React.FC = () => {
       flapCompleted: true,
       flapBestScore: Math.max(p.flapBestScore, score),
     }));
-    setCurrentScreen('ARCADE');
+    if (!progress.isUnlocked) {
+      setCurrentScreen('AUTH');
+    } else {
+      setCurrentScreen('ARCADE');
+    }
     setActiveMiniGame(null);
+  };
+
+  const handleAuthComplete = () => {
+    setProgress((p) => ({ ...p, isUnlocked: true }));
+    setCurrentScreen('ARCADE');
   };
 
   const handleGtaComplete = (score: number) => {
