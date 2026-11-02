@@ -275,8 +275,12 @@ export const SleepModeGame: React.FC<SleepModeGameProps> = ({ onComplete, onBack
             }}
           >
             <img
-              src={BIRTHDAY_CONFIG.sleepingPhotoUrl}
-              alt="Sleeping"
+              src={
+                drowsiness > 50 && BIRTHDAY_CONFIG.sleepingPhotoUrl2
+                  ? BIRTHDAY_CONFIG.sleepingPhotoUrl2
+                  : BIRTHDAY_CONFIG.sleepingPhotoUrl
+              }
+              alt="Sleeping Ashu"
               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             />
           </div>

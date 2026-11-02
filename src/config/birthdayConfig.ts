@@ -45,7 +45,9 @@ export interface BirthdayConfig {
   photoUrl: string;
   characterFaceUrl: string;
   sleepingPhotoUrl: string;
+  sleepingPhotoUrl2?: string;
   eatingPhotoUrl: string;
+  specialVideoUrl?: string;
   birthdaySongUrl: string;
   songTitle: string;
   songArtist: string;
@@ -95,9 +97,11 @@ export const BIRTHDAY_CONFIG: BirthdayConfig = {
 
   // 2. Personal Assets
   photoUrl: "/images/birthday-person.png",
-  characterFaceUrl: "/images/character-face.png",
-  sleepingPhotoUrl: "/images/sleeping-photo.png",
-  eatingPhotoUrl: "/images/eating-photo.png",
+  characterFaceUrl: "/images/character-face.jpeg",
+  sleepingPhotoUrl: "/images/sleeping-photo-1.jpeg",
+  sleepingPhotoUrl2: "/images/sleeping-photo-2.jpeg",
+  eatingPhotoUrl: "/images/eating-photo.jpeg",
+  specialVideoUrl: "/images/special-video.mp4",
   birthdaySongUrl: "/audio/birthday-song.mp3",
   songTitle: "South Dev Cyber Anthem v20.05",
   songArtist: "Composed & Injected by Aakash & Sanjay",

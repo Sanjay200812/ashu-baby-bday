@@ -12,6 +12,8 @@ import {
   Check,
   Cpu,
   Heart,
+  Video,
+  Film,
 } from 'lucide-react';
 import { BIRTHDAY_CONFIG } from '../../config/birthdayConfig';
 import { soundSystem } from '../../utils/audioSystem';
@@ -486,6 +488,68 @@ export const FinalSurprise: React.FC<FinalSurpriseProps> = ({ onReplayAll, onBac
             </div>
           </div>
         </div>
+
+        {/* Special Birthday Video Reel Archive */}
+        {BIRTHDAY_CONFIG.specialVideoUrl && (
+          <div
+            style={{
+              width: '100%',
+              maxWidth: '580px',
+              background: 'rgba(8, 14, 20, 0.92)',
+              border: '1px solid #00e5ff',
+              boxShadow: '0 0 30px rgba(0, 229, 255, 0.2)',
+              borderRadius: '8px',
+              padding: '20px',
+              marginBottom: '36px',
+              textAlign: 'center',
+            }}
+          >
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                color: '#00e5ff',
+                fontSize: '0.88rem',
+                fontWeight: 800,
+                letterSpacing: '0.08em',
+                marginBottom: '14px',
+              }}
+            >
+              <Film size={18} />
+              <span>TOP_SECRET // ASHU_BIRTHDAY_REEL.MP4</span>
+            </div>
+
+            <div
+              style={{
+                position: 'relative',
+                borderRadius: '6px',
+                overflow: 'hidden',
+                background: '#000',
+                border: '1px solid rgba(0, 229, 255, 0.3)',
+                boxShadow: '0 8px 24px rgba(0, 0, 0, 0.8)',
+              }}
+            >
+              <video
+                src={BIRTHDAY_CONFIG.specialVideoUrl}
+                controls
+                playsInline
+                preload="metadata"
+                poster={BIRTHDAY_CONFIG.photoUrl}
+                style={{
+                  width: '100%',
+                  maxHeight: '440px',
+                  display: 'block',
+                  backgroundColor: '#000',
+                }}
+              />
+            </div>
+
+            <div style={{ fontSize: '0.76rem', color: '#5c7866', marginTop: '10px' }}>
+              Recorded & assembled by Aakash & Sanjay // Press play to watch the tribute
+            </div>
+          </div>
+        )}
 
         {/* Reusable Audio Player */}
         <div style={{ width: '100%', display: 'flex', justifyContent: 'center', marginBottom: '32px' }}>

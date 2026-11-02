@@ -9,6 +9,15 @@ export default defineConfig({
     strictPort: true,
     open: false,
     cors: true,
+    watch: {
+      ignored: [
+        '**/public/**',
+        '**/*.mp4',
+        '**/*.mp3',
+        '**/*.wav',
+        '**/.git/**',
+      ],
+    },
   },
   build: {
     rollupOptions: {
