@@ -277,3 +277,4 @@ export const CommandTerminalModal: React.FC<CommandTerminalModalProps> = ({
     </div>
   );
 };
+

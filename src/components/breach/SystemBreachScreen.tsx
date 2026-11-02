@@ -60,7 +60,7 @@ export const SystemBreachScreen: React.FC<SystemBreachScreenProps> = ({ onEnter 
         position: 'relative',
         minHeight: '100vh',
         width: '100%',
-        backgroundColor: '#05070a',
+        backgroundColor: 'transparent',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -242,3 +242,4 @@ export const SystemBreachScreen: React.FC<SystemBreachScreenProps> = ({ onEnter 
     </div>
   );
 };
+

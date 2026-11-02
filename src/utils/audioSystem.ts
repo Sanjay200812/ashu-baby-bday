@@ -32,15 +32,20 @@ class SoundSystem {
   }
 
   private initContext() {
-    if (!this.ctx && typeof window !== 'undefined') {
-      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-      this.ctx = new AudioCtx();
-      this.masterGain = this.ctx.createGain();
-      this.masterGain.gain.value = this.isMuted ? 0 : this.volume;
-      this.masterGain.connect(this.ctx.destination);
-    }
-    if (this.ctx && this.ctx.state === 'suspended') {
-      this.ctx.resume();
+    try {
+      if (!this.ctx && typeof window !== 'undefined') {
+        const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+        if (!AudioCtx) return;
+        this.ctx = new AudioCtx();
+        this.masterGain = this.ctx.createGain();
+        this.masterGain.gain.value = this.isMuted ? 0 : this.volume;
+        this.masterGain.connect(this.ctx.destination);
+      }
+      if (this.ctx && this.ctx.state === 'suspended' && this.hasUserInteracted) {
+        this.ctx.resume().catch(() => {});
+      }
+    } catch {
+      // AudioContext unavailable or autoplay blocked
     }
   }
 

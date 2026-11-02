@@ -19,6 +19,36 @@ import { SystemStatusModal } from './components/dashboard/SystemStatusModal';
 import { MatrixRain } from './components/terminal/MatrixRain';
 import { soundSystem } from './utils/audioSystem';
 
+const safeGetItem = (key: string, fallback: string = ''): string => {
+  try {
+    return localStorage.getItem(key) ?? fallback;
+  } catch {
+    return fallback;
+  }
+};
+
+const safeGetNumber = (key: string, fallback: number = 0): number => {
+  try {
+    const val = localStorage.getItem(key);
+    if (!val) return fallback;
+    const parsed = parseInt(val, 10);
+    return isNaN(parsed) ? fallback : parsed;
+  } catch {
+    return fallback;
+  }
+};
+
+const safeGetJson = <T,>(key: string, fallback: T): T => {
+  try {
+    const item = localStorage.getItem(key);
+    if (!item) return fallback;
+    const parsed = JSON.parse(item);
+    return Array.isArray(fallback) && !Array.isArray(parsed) ? fallback : parsed;
+  } catch {
+    return fallback;
+  }
+};
+
 export const App: React.FC = () => {
   const [currentScreen, setCurrentScreen] = useState<ScreenType>('BREACH');
   const [activeMiniGame, setActiveMiniGame] = useState<MiniGameId | null>(null);
@@ -28,47 +58,51 @@ export const App: React.FC = () => {
   const [isDashboardOpen, setIsDashboardOpen] = useState<boolean>(false);
   const [isMatrixActive, setIsMatrixActive] = useState<boolean>(false);
 
-  // Progress state
+  // Progress state with safe fallback getters
   const [progress, setProgress] = useState<GameProgress>(() => {
     return {
-      isBreached: localStorage.getItem('southdev_breached') === 'true',
-      isUnlocked: localStorage.getItem('southdev_unlocked') === 'true',
-      flapCompleted: localStorage.getItem('birthday_flap_completed') === 'true',
-      flapBestScore: parseInt(localStorage.getItem('birthday_flap_best') || '0', 10),
-      gtaCompleted: localStorage.getItem('birthday_gta_completed') === 'true',
-      gtaBestScore: parseInt(localStorage.getItem('birthday_gta_best') || '0', 10),
-      spidermanCompleted: localStorage.getItem('birthday_spiderman_completed') === 'true',
-      spidermanBestScore: parseInt(localStorage.getItem('birthday_spiderman_best') || '0', 10),
-      freefireCompleted: localStorage.getItem('birthday_freefire_completed') === 'true',
-      freefireBestScore: parseInt(localStorage.getItem('birthday_freefire_best') || '0', 10),
-      foodCompleted: localStorage.getItem('birthday_food_completed') === 'true',
-      foodBestScore: parseInt(localStorage.getItem('birthday_food_best') || '0', 10),
-      sleepCompleted: localStorage.getItem('birthday_sleep_completed') === 'true',
-      sleepBestScore: parseInt(localStorage.getItem('birthday_sleep_best') || '0', 10),
-      gamingQuizCompleted: localStorage.getItem('birthday_gquiz_completed') === 'true',
-      gamingQuizScore: parseInt(localStorage.getItem('birthday_gquiz_score') || '0', 10),
-      personalQuizCompleted: localStorage.getItem('birthday_pquiz_completed') === 'true',
-      personalQuizScore: parseInt(localStorage.getItem('birthday_pquiz_score') || '0', 10),
-      movieQuizCompleted: localStorage.getItem('birthday_mquiz_completed') === 'true',
-      movieQuizScore: parseInt(localStorage.getItem('birthday_mquiz_score') || '0', 10),
-      fragmentsCollected: JSON.parse(localStorage.getItem('southdev_fragments') || '[]'),
+      isBreached: safeGetItem('southdev_breached') === 'true',
+      isUnlocked: safeGetItem('southdev_unlocked') === 'true',
+      flapCompleted: safeGetItem('birthday_flap_completed') === 'true',
+      flapBestScore: safeGetNumber('birthday_flap_best', 0),
+      gtaCompleted: safeGetItem('birthday_gta_completed') === 'true',
+      gtaBestScore: safeGetNumber('birthday_gta_best', 0),
+      spidermanCompleted: safeGetItem('birthday_spiderman_completed') === 'true',
+      spidermanBestScore: safeGetNumber('birthday_spiderman_best', 0),
+      freefireCompleted: safeGetItem('birthday_freefire_completed') === 'true',
+      freefireBestScore: safeGetNumber('birthday_freefire_best', 0),
+      foodCompleted: safeGetItem('birthday_food_completed') === 'true',
+      foodBestScore: safeGetNumber('birthday_food_best', 0),
+      sleepCompleted: safeGetItem('birthday_sleep_completed') === 'true',
+      sleepBestScore: safeGetNumber('birthday_sleep_best', 0),
+      gamingQuizCompleted: safeGetItem('birthday_gquiz_completed') === 'true',
+      gamingQuizScore: safeGetNumber('birthday_gquiz_score', 0),
+      personalQuizCompleted: safeGetItem('birthday_pquiz_completed') === 'true',
+      personalQuizScore: safeGetNumber('birthday_pquiz_score', 0),
+      movieQuizCompleted: safeGetItem('birthday_mquiz_completed') === 'true',
+      movieQuizScore: safeGetNumber('birthday_mquiz_score', 0),
+      fragmentsCollected: safeGetJson<number[]>('southdev_fragments', []),
     };
   });
 
-  // Sync to localStorage
+  // Sync to localStorage safely
   useEffect(() => {
-    localStorage.setItem('southdev_breached', progress.isBreached ? 'true' : 'false');
-    localStorage.setItem('southdev_unlocked', progress.isUnlocked ? 'true' : 'false');
-    localStorage.setItem('birthday_flap_completed', progress.flapCompleted ? 'true' : 'false');
-    localStorage.setItem('birthday_gta_completed', progress.gtaCompleted ? 'true' : 'false');
-    localStorage.setItem('birthday_spiderman_completed', progress.spidermanCompleted ? 'true' : 'false');
-    localStorage.setItem('birthday_freefire_completed', progress.freefireCompleted ? 'true' : 'false');
-    localStorage.setItem('birthday_food_completed', progress.foodCompleted ? 'true' : 'false');
-    localStorage.setItem('birthday_sleep_completed', progress.sleepCompleted ? 'true' : 'false');
-    localStorage.setItem('birthday_gquiz_completed', progress.gamingQuizCompleted ? 'true' : 'false');
-    localStorage.setItem('birthday_pquiz_completed', progress.personalQuizCompleted ? 'true' : 'false');
-    localStorage.setItem('birthday_mquiz_completed', progress.movieQuizCompleted ? 'true' : 'false');
-    localStorage.setItem('southdev_fragments', JSON.stringify(progress.fragmentsCollected));
+    try {
+      localStorage.setItem('southdev_breached', progress.isBreached ? 'true' : 'false');
+      localStorage.setItem('southdev_unlocked', progress.isUnlocked ? 'true' : 'false');
+      localStorage.setItem('birthday_flap_completed', progress.flapCompleted ? 'true' : 'false');
+      localStorage.setItem('birthday_gta_completed', progress.gtaCompleted ? 'true' : 'false');
+      localStorage.setItem('birthday_spiderman_completed', progress.spidermanCompleted ? 'true' : 'false');
+      localStorage.setItem('birthday_freefire_completed', progress.freefireCompleted ? 'true' : 'false');
+      localStorage.setItem('birthday_food_completed', progress.foodCompleted ? 'true' : 'false');
+      localStorage.setItem('birthday_sleep_completed', progress.sleepCompleted ? 'true' : 'false');
+      localStorage.setItem('birthday_gquiz_completed', progress.gamingQuizCompleted ? 'true' : 'false');
+      localStorage.setItem('birthday_pquiz_completed', progress.personalQuizCompleted ? 'true' : 'false');
+      localStorage.setItem('birthday_mquiz_completed', progress.movieQuizCompleted ? 'true' : 'false');
+      localStorage.setItem('southdev_fragments', JSON.stringify(progress.fragmentsCollected));
+    } catch (err) {
+      console.warn('LocalStorage write ignored:', err);
+    }
   }, [progress]);
 
   // Global key listener for ~ to toggle Command Terminal
